@@ -1,2 +1,2 @@
 # polemica_league
-Sempre polemica
+Sempre polemica?
