@@ -21,8 +21,8 @@ export function Home() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
 
-    supabase.from('match_details').select('giornata', { count: 'exact', head: true }).then(({ count }) => {
-      if (count !== null) setPartiteCount(count)
+    supabase.from('match_details').select('giornata').order('giornata', { ascending: false }).limit(1).single().then(({ data }) => {
+      if (data) setPartiteCount(data.giornata)
     })
     supabase.from('players').select('id', { count: 'exact', head: true }).then(({ count }) => {
       if (count !== null) setGiocatoriCount(count)
