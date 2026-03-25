@@ -45,7 +45,7 @@ export function AdminHome() {
     if (!widgetId) return
     setSubmitting(true)
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from('home_widgets')
       .update({
         attivo,
@@ -53,8 +53,10 @@ export function AdminHome() {
         updated_at: new Date().toISOString(),
       })
       .eq('id', widgetId)
+      .select()
 
     if (error) toast.error(error.message)
+    else if (!updated || updated.length === 0) toast.error('Permesso negato: verifica di essere admin')
     else toast.success('Salvato')
     setSubmitting(false)
   }
