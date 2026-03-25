@@ -256,7 +256,7 @@ export function Home() {
           </div>
 
           {/* Teams */}
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', padding: '0 0.5rem' }}>
             {[
               { team: ultimaPartita.teamA, isWinner: ultimaPartita.golA > ultimaPartita.golB },
               { team: ultimaPartita.teamB, isWinner: ultimaPartita.golB > ultimaPartita.golA },
@@ -268,15 +268,15 @@ export function Home() {
                     onClick={() => navigate(`/profilo/${p.player_id}`)}
                     style={{
                       fontSize: '0.78rem',
-                      padding: '0.2rem 0',
+                      padding: '0.25rem 0',
                       color: isWinner ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)',
                       cursor: 'pointer',
                     }}
                   >
-                    {isWinner ? '🏅' : '·'} {p.nome}
+                    · {p.nome}
                     {p.gol > 0 && (
-                      <span style={{ color: 'var(--accent)', fontSize: '0.7rem', marginLeft: '0.3rem' }}>
-                        x{p.gol}
+                      <span style={{ marginLeft: '0.3rem' }}>
+                        {'⚽'.repeat(p.gol)}
                       </span>
                     )}
                   </div>
