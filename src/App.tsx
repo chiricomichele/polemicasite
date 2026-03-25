@@ -8,6 +8,7 @@ import { OneVsOne } from './pages/OneVsOne'
 import { Profilo } from './pages/Profilo'
 import { Partite } from './pages/Partite'
 import { NewsArchive } from './pages/NewsArchive'
+import { Giocatori } from './pages/Giocatori'
 import { ManifestoPage } from './pages/Manifesto'
 import { AdminLogin } from './pages/admin/Login'
 import { AdminLayout } from './pages/admin/Layout'
@@ -28,6 +29,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<NewsArchive />} />
             <Route path="/partite" element={<Partite />} />
+            <Route path="/giocatori" element={<Giocatori />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/1vs1" element={<OneVsOne />} />
             <Route path="/profilo/:id" element={<Profilo />} />
