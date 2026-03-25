@@ -37,22 +37,25 @@ export function AdminPartite() {
   const [editing, setEditing] = useState<number | null>(null)
 
   // Existing matches list
-  const [matches, setMatches] = useState<{ giornata: number; data: string; count: number }[]>([])
+  const [matches, setMatches] = useState<{ giornata: number; data: string; campo: string | null; golA: number; golB: number; count: number }[]>([])
 
   const loadData = () => {
     getPlayers().then(setPlayers).catch(() => {})
     supabase
       .from('match_details')
-      .select('giornata, data')
+      .select('giornata, data, campo, squadra, gol_squadra')
       .order('giornata', { ascending: false })
       .then(({ data: md }) => {
         if (!md) { setLoading(false); return }
-        const grouped = md.reduce<Record<number, { data: string; count: number }>>((acc, r) => {
-          if (!acc[r.giornata]) acc[r.giornata] = { data: r.data, count: 0 }
+        const grouped = md.reduce<Record<number, { data: string; campo: string | null; golA: number; golB: number; count: number }>>((acc, r) => {
+          if (!acc[r.giornata]) acc[r.giornata] = { data: r.data, campo: r.campo, golA: 0, golB: 0, count: 0 }
           acc[r.giornata].count++
+          // gol_squadra is the same for all players in a team, pick it once per team
+          if (r.squadra === 'A' && acc[r.giornata].golA === 0) acc[r.giornata].golA = r.gol_squadra
+          if (r.squadra === 'B' && acc[r.giornata].golB === 0) acc[r.giornata].golB = r.gol_squadra
           return acc
         }, {})
-        setMatches(Object.entries(grouped).map(([g, v]) => ({ giornata: Number(g), ...v })))
+        setMatches(Object.entries(grouped).map(([g, v]) => ({ giornata: Number(g), ...v })).sort((a, b) => b.giornata - a.giornata))
         setLoading(false)
       })
   }
@@ -285,7 +288,8 @@ export function AdminPartite() {
         }}>
           <div>
             <span style={{ fontWeight: 600 }}>Giornata {m.giornata}</span>
-            <span style={{ color: 'var(--text-secondary)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>{m.data} — {m.count} giocatori</span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: '0.75rem', fontSize: '0.9rem' }}>{m.golA} - {m.golB}</span>
+            <span style={{ color: 'var(--text-secondary)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>{m.data}{m.campo ? ` — ${m.campo}` : ''}</span>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button onClick={() => handleEdit(m.giornata)} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.85rem' }}>Modifica</button>
