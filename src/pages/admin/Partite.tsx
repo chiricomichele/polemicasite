@@ -34,6 +34,7 @@ export function AdminPartite() {
   const [ora, setOra] = useState('')
   const [rows, setRows] = useState<MatchRow[]>([emptyRow()])
   const [submitting, setSubmitting] = useState(false)
+  const [editing, setEditing] = useState<number | null>(null)
 
   // Existing matches list
   const [matches, setMatches] = useState<{ giornata: number; data: string; count: number }[]>([])
@@ -89,26 +90,73 @@ export function AdminPartite() {
     if (toInsert.length === 0) { toast.error('Aggiungi almeno un giocatore'); return }
 
     setSubmitting(true)
-    const { error } = await supabase.from('match_details').insert(toInsert)
+
+    let error: any = null
+    if (editing !== null) {
+      // Delete old rows first, then re-insert
+      const { error: delErr } = await supabase.from('match_details').delete().eq('giornata', editing)
+      if (delErr) { error = delErr } else {
+        const { error: insErr } = await supabase.from('match_details').insert(toInsert)
+        error = insErr
+      }
+    } else {
+      const { error: insErr } = await supabase.from('match_details').insert(toInsert)
+      error = insErr
+    }
+
     setSubmitting(false)
 
     if (error) {
       toast.error(`Errore: ${error.message}`)
     } else {
-      toast.success(`Partita giornata ${giornata} salvata`)
-      setGiornata('')
-      setData('')
-      setCampo('')
-      setOra('')
-      setRows([emptyRow()])
+      toast.success(editing !== null ? `Giornata ${giornata} aggiornata` : `Partita giornata ${giornata} salvata`)
+      cancelEdit()
       loadData()
     }
+  }
+
+  const handleEdit = async (g: number) => {
+    const { data: md } = await supabase
+      .from('match_details')
+      .select('*')
+      .eq('giornata', g)
+      .order('squadra')
+    if (!md || md.length === 0) { toast.error('Nessun dato trovato'); return }
+
+    setEditing(g)
+    setGiornata(String(md[0].giornata))
+    setData(md[0].data)
+    setCampo(md[0].campo || '')
+    setOra(md[0].ora ? md[0].ora.slice(0, 5) : '')
+    setRows(md.map((r: any) => ({
+      squadra: r.squadra,
+      player_id: r.player_id,
+      er: r.er != null ? String(r.er) : '',
+      gol: String(r.gol),
+      autogol: String(r.autogol),
+      assist: String(r.assist),
+      voto: r.voto != null ? String(r.voto) : '',
+      gol_squadra: String(r.gol_squadra),
+      gol_avversari: String(r.gol_avversari),
+      risultato: r.risultato,
+      differenza_reti: String(r.differenza_reti),
+    })))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const cancelEdit = () => {
+    setEditing(null)
+    setGiornata('')
+    setData('')
+    setCampo('')
+    setOra('')
+    setRows([emptyRow()])
   }
 
   const handleDelete = async (g: number) => {
     const { error } = await supabase.from('match_details').delete().eq('giornata', g)
     if (error) toast.error(error.message)
-    else { toast.success(`Giornata ${g} eliminata`); loadData() }
+    else { toast.success(`Giornata ${g} eliminata`); if (editing === g) cancelEdit(); loadData() }
   }
 
   const fieldStyle: React.CSSProperties = { padding: '0.4rem', fontSize: '0.8rem', width: '100%' }
@@ -123,7 +171,9 @@ export function AdminPartite() {
 
       {/* New match form */}
       <form onSubmit={handleSubmit} style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '2rem' }}>
-        <h3 style={{ fontWeight: 600, marginBottom: '1rem' }}>Nuova partita</h3>
+        <h3 style={{ fontWeight: 600, marginBottom: '1rem' }}>
+          {editing !== null ? `Modifica giornata ${editing}` : 'Nuova partita'}
+        </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
           <div>
@@ -206,8 +256,17 @@ export function AdminPartite() {
             disabled={submitting}
             style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', background: 'var(--accent)', color: '#000', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', opacity: submitting ? 0.6 : 1 }}
           >
-            {submitting ? 'Salvataggio...' : 'Salva partita'}
+            {submitting ? 'Salvataggio...' : editing !== null ? 'Aggiorna partita' : 'Salva partita'}
           </button>
+          {editing !== null && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #333', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+            >
+              Annulla
+            </button>
+          )}
         </div>
       </form>
 
@@ -228,7 +287,10 @@ export function AdminPartite() {
             <span style={{ fontWeight: 600 }}>Giornata {m.giornata}</span>
             <span style={{ color: 'var(--text-secondary)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>{m.data} — {m.count} giocatori</span>
           </div>
-          <button onClick={() => handleDelete(m.giornata)} style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.85rem' }}>Elimina</button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={() => handleEdit(m.giornata)} style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.85rem' }}>Modifica</button>
+            <button onClick={() => handleDelete(m.giornata)} style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.85rem' }}>Elimina</button>
+          </div>
         </div>
       ))}
     </div>
