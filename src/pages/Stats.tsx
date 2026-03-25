@@ -52,11 +52,12 @@ export function Stats() {
               flex: 1,
               padding: '0.6rem',
               borderRadius: '8px',
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: '0.85rem',
               textTransform: 'uppercase',
-              background: tab === key ? 'var(--accent)' : 'var(--surface)',
-              color: tab === key ? '#000' : 'var(--text-secondary)',
+              background: tab === key ? 'var(--accent)' : 'transparent',
+              color: tab === key ? '#000' : '#555',
+              border: tab === key ? 'none' : '1px solid #333',
               transition: 'all 0.2s',
             }}
           >
