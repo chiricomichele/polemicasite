@@ -88,12 +88,21 @@ export function Profilo() {
         gap: '0.75rem',
         marginBottom: '1.5rem',
       }}>
-        {([
-          ['GCP', stats.gcp !== null ? stats.gcp.toFixed(3) : '-'],
-          ['Plus/Minus', stats.plus_minus >= 0 ? `+${stats.plus_minus}` : String(stats.plus_minus)],
-          ['Media Voto', stats.media_voto !== null ? stats.media_voto.toFixed(2) : '-'],
-          ['Presenze', String(stats.presenze)],
-        ] as const).map(([label, value]) => (
+        {(() => {
+          const wins = streak.filter((r) => r === 'V').length
+          const losses = streak.filter((r) => r === 'S').length
+          const streakLabel = wins > 0 ? 'Vittorie (5)' : losses > 0 ? 'Sconfitte (5)' : null
+          const streakValue = wins > 0 ? String(wins) : losses > 0 ? String(losses) : null
+          const cards: [string, string][] = [
+            ['Gol', String(stats.gol_totali)],
+            ['Assist', String(stats.assist_totali)],
+            ['Media Voto', stats.media_voto !== null ? stats.media_voto.toFixed(2) : '-'],
+            ['Plus/Minus', stats.plus_minus >= 0 ? `+${stats.plus_minus}` : String(stats.plus_minus)],
+            ['Presenze', String(stats.presenze)],
+          ]
+          if (streakLabel && streakValue) cards.push([streakLabel, streakValue])
+          return cards
+        })().map(([label, value]) => (
           <motion.div
             key={label}
             initial={{ opacity: 0, y: 10 }}

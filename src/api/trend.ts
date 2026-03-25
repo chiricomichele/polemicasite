@@ -36,16 +36,11 @@ export async function getPlayerTrend(id: string): Promise<PlayerTrendResponse> {
     ? Math.round((votiValidi.reduce((s, r) => s + r.voto!, 0) / votiValidi.length) * 100) / 100
     : null
 
-  const erSum = trendRows.reduce((s, r) => s + (r.er !== null && r.er > 0 ? r.er : 0), 0)
-  const gcp = erSum > 0
-    ? Math.round(((gol_totali + assist_totali) / erSum) * 1000) / 1000
-    : null
-
   const streak = trendRows.slice(-5).map((r) => r.risultato)
 
   return {
     player: player as any,
-    stats: { presenze, gol_totali, assist_totali, media_voto, gcp, plus_minus },
+    stats: { presenze, gol_totali, assist_totali, media_voto, plus_minus },
     streak,
     trend: trendRows,
   }

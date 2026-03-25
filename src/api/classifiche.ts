@@ -7,7 +7,7 @@ export type ClassificheResult = {
 }
 
 export async function getClassifiche(
-  type: 'gcp' | 'voto' | 'marcatori'
+  type: 'voto' | 'marcatori'
 ): Promise<ClassificheResult> {
   // Fetch aggregated stats from the view
   const { data: rows, error } = await supabase
@@ -44,7 +44,7 @@ export async function getClassifiche(
   }
 
   // Sort by requested metric
-  const sortKey = type === 'marcatori' ? 'gol_totali' : type === 'voto' ? 'media_voto' : 'gcp'
+  const sortKey = type === 'marcatori' ? 'gol_totali' : 'media_voto'
   const sorted = (rows as any[]).sort((a, b) => {
     const va = a[sortKey] as number | null
     const vb = b[sortKey] as number | null
@@ -61,7 +61,6 @@ export async function getClassifiche(
     gol_totali: Number(r.gol_totali),
     assist_totali: Number(r.assist_totali),
     media_voto: r.media_voto !== null ? Number(r.media_voto) : null,
-    gcp: r.gcp !== null ? Number(r.gcp) : null,
     plus_minus: Number(r.plus_minus),
     streak: computeStreak(streakMap.get(r.id) ?? []),
     last_5: streakMap.get(r.id) ?? [],

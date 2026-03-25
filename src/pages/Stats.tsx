@@ -5,24 +5,22 @@ import { getClassifiche } from '../api/classifiche'
 import type { ClassificaRow } from '../lib/schemas'
 import { Skeleton } from '../components/Skeleton'
 
-type Tab = 'marcatori' | 'voto' | 'gcp'
+type Tab = 'marcatori' | 'voto'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'marcatori', label: 'Marcatori' },
   { key: 'voto', label: 'Media Voto' },
-  { key: 'gcp', label: 'GCP' },
 ]
 
 function valueForTab(row: ClassificaRow, tab: Tab): string {
   if (tab === 'marcatori') return String(row.gol_totali)
-  if (tab === 'voto') return row.media_voto !== null ? row.media_voto.toFixed(2) : '-'
-  return row.gcp !== null ? row.gcp.toFixed(3) : '-'
+  return row.media_voto !== null ? row.media_voto.toFixed(2) : '-'
 }
 
 const streakColors: Record<string, string> = { V: '#22c55e', P: '#eab308', S: '#ef4444' }
 
 export function Stats() {
-  const [tab, setTab] = useState<Tab>('gcp')
+  const [tab, setTab] = useState<Tab>('marcatori')
   const [rows, setRows] = useState<ClassificaRow[]>([])
   const [loading, setLoading] = useState(true)
 
