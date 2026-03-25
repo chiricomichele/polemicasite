@@ -26,32 +26,41 @@ export function AdminHome() {
   const [igPosts, setIgPosts] = useState(['', '', ''])
   const [igSubmitting, setIgSubmitting] = useState(false)
 
-  useEffect(() => {
-    supabase
-      .from('home_widgets')
-      .select('*')
-      .in('tipo', ['prossima_partita', 'instagram'])
-      .then(({ data: rows }) => {
+useEffect(() => {
+    const fetchWidgets = async () => {
+      try {
+        const { data: rows } = await supabase
+          .from('home_widgets')
+          .select('*')
+          .in('tipo', ['prossima_partita', 'instagram']);
+
         for (const row of rows ?? []) {
           if (row.tipo === 'prossima_partita') {
-            setWidgetId(row.id)
-            setAttivo(row.attivo)
-            const p = row.payload as ProssimaPartita
-            setData(p.data ?? '')
-            setOra(p.ora ?? '')
-            setLuogo(p.luogo ?? '')
-            setNome(p.nome ?? '')
+            setWidgetId(row.id);
+            setAttivo(row.attivo);
+            const p = row.payload as ProssimaPartita;
+            setData(p.data ?? '');
+            setOra(p.ora ?? '');
+            setLuogo(p.luogo ?? '');
+            setNome(p.nome ?? '');
           }
           if (row.tipo === 'instagram') {
-            setIgWidgetId(row.id)
-            setIgAttivo(row.attivo)
-            const p = row.payload as { posts: string[] }
-            setIgPosts(p.posts?.length ? p.posts : ['', '', ''])
+            setIgWidgetId(row.id);
+            setIgAttivo(row.attivo);
+            const p = row.payload as { posts: string[] };
+            setIgPosts(p.posts?.length ? p.posts : ['', '', '']);
           }
         }
-      })
-      .finally(() => setLoading(false))
-  }, [])
+      } catch (error) {
+        console.error('Errore caricamento widget:', error);
+      } finally {
+        // Qui il .finally() funzionerà senza errori perché siamo in un blocco try/catch
+        setLoading(false);
+      }
+    };
+
+    fetchWidgets();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
