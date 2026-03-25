@@ -199,7 +199,7 @@ export function Home() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: '1rem' }}>⚽</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Ultima Partita</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Ultima partita</span>
           </div>
 
           <div style={{
