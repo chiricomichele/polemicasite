@@ -102,6 +102,8 @@ export function Partite() {
           const teamA = m.players.filter(p => p.squadra === 'A')
           const teamB = m.players.filter(p => p.squadra === 'B')
           const winner = m.golA > m.golB ? 'A' : m.golB > m.golA ? 'B' : null
+          const maxVoto = Math.max(...m.players.map(p => p.voto ?? -1))
+          const isMvp = (p: MatchPlayer) => p.voto != null && p.voto === maxVoto && maxVoto > 0
 
           return (
             <motion.div
@@ -195,11 +197,45 @@ export function Partite() {
                             color: 'inherit',
                           }}
                         >
-                          <span style={{ fontSize: '0.85rem' }}>{p.nome}</span>
-                          <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                            {p.gol > 0 && <span title="Gol" style={{ color: 'var(--accent)' }}>{p.gol}G</span>}
-                            {p.autogol > 0 && <span title="Autogol" style={{ color: 'var(--danger)' }}>{p.autogol}AG</span>}
-                            {p.assist > 0 && <span title="Assist">{p.assist}A</span>}
+                          <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {isMvp(p) && <span style={{ fontSize: '0.75rem' }} title="MVP">👑</span>}
+                            {p.nome}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {p.gol > 0 && (
+                              <span title={`${p.gol} Gol`} style={{ display: 'flex', gap: '2px' }}>
+                                {Array.from({ length: p.gol }, (_, i) => (
+                                  <span key={i} style={{ fontSize: '0.75rem' }}>⚽</span>
+                                ))}
+                              </span>
+                            )}
+                            {p.autogol > 0 && (
+                              <span title={`${p.autogol} Autogol`} style={{ display: 'flex', gap: '2px' }}>
+                                {Array.from({ length: p.autogol }, (_, i) => (
+                                  <span key={i} style={{ fontSize: '0.7rem', filter: 'grayscale(1) brightness(0.6)' }}>⚽</span>
+                                ))}
+                              </span>
+                            )}
+                            {p.assist > 0 && (
+                              <span title={`${p.assist} Assist`} style={{ display: 'flex', gap: '2px' }}>
+                                {Array.from({ length: p.assist }, (_, i) => (
+                                  <span key={i} style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: '50%',
+                                    background: 'var(--accent)',
+                                    color: '#000',
+                                    fontSize: '0.55rem',
+                                    fontWeight: 800,
+                                    lineHeight: 0,
+                                    paddingTop: '1px',
+                                  }}>A</span>
+                                ))}
+                              </span>
+                            )}
                             {p.voto != null && <span style={{ fontWeight: 600, color: p.voto >= 6.5 ? '#22c55e' : p.voto < 5.5 ? '#ef4444' : 'var(--text-secondary)' }}>{p.voto}</span>}
                           </div>
                         </Link>
