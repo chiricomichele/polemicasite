@@ -25,6 +25,7 @@ export function AdminGiocatori() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [visiblePlayers, setVisiblePlayers] = useState(10)
 
   const loadData = () => {
     getPlayers().then(setPlayers).catch(() => {}).finally(() => setLoading(false))
@@ -107,6 +108,7 @@ export function AdminGiocatori() {
   }
 
   const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Sei sicuro di voler eliminare ${name}? Questa azione non è reversibile.`)) return
     const { error } = await supabase.from('players').delete().eq('id', id)
     if (error) toast.error(error.message)
     else { toast.success(`${name} eliminato`); loadData() }
@@ -189,6 +191,14 @@ export function AdminGiocatori() {
                 accept="image/*"
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null
+                  if (file) {
+                    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+                    if (!allowed.includes(file.type)) {
+                      toast.error('Formato non supportato. Usa JPG, PNG o WebP.')
+                      e.target.value = ''
+                      return
+                    }
+                  }
                   setAvatarFile(file)
                   if (file) setAvatarPreview(URL.createObjectURL(file))
                 }}
@@ -209,7 +219,7 @@ export function AdminGiocatori() {
 
       {/* Player list */}
       {loading && <Skeleton height="2.5rem" count={6} />}
-      {players.map((p) => (
+      {players.slice(0, visiblePlayers).map((p) => (
         <div key={p.id} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: 'var(--surface)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.5rem',
@@ -228,6 +238,24 @@ export function AdminGiocatori() {
           </div>
         </div>
       ))}
+      {visiblePlayers < players.length && (
+        <button
+          onClick={() => setVisiblePlayers((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
     </div>
   )
 }

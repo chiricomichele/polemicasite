@@ -43,6 +43,7 @@ export function AdminRivalita() {
   const [vittG2, setVittG2] = useState('0')
   const [totPartite, setTotPartite] = useState('0')
   const [submitting, setSubmitting] = useState(false)
+  const [visibleRivalries, setVisibleRivalries] = useState(10)
 
   const loadData = () => {
     Promise.all([
@@ -104,6 +105,7 @@ export function AdminRivalita() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questa rivalità?')) return
     const { error } = await supabase.from('rivalries').delete().eq('id', id)
     if (error) toast.error(error.message)
     else { toast.success('Rivalità eliminata'); loadData() }
@@ -173,7 +175,7 @@ export function AdminRivalita() {
 
       {loading && <Skeleton height="2.5rem" count={6} />}
 
-      {rivalries.map((r) => (
+      {rivalries.slice(0, visibleRivalries).map((r) => (
         <div key={r.id} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: 'var(--surface)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.5rem',
@@ -197,6 +199,24 @@ export function AdminRivalita() {
           </div>
         </div>
       ))}
+      {visibleRivalries < rivalries.length && (
+        <button
+          onClick={() => setVisibleRivalries((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
     </div>
   )
 }

@@ -7,6 +7,14 @@ import { Skeleton } from '../components/Skeleton'
 import { NewsCard } from '../components/NewsCard'
 import logo from '../resources/logo.jpeg'
 
+function safeIgEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url)
+    if (u.hostname !== 'www.instagram.com' && u.hostname !== 'instagram.com') return null
+    return u.origin + u.pathname.replace(/\/?$/, '/embed')
+  } catch { return null }
+}
+
 export function Home() {
   const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,6 +24,7 @@ export function Home() {
   const [giocatoriCount, setGiocatoriCount] = useState<number | null>(null)
   const [prossimaPartita, setProssimaPartita] = useState<{ data: string; ora: string; luogo: string; nome: string } | null>(null)
   const [igPosts, setIgPosts] = useState<string[]>([])
+  const [igIndex, setIgIndex] = useState(0)
   const [ultimaPartita, setUltimaPartita] = useState<{
     giornata: number; data: string; campo: string | null; ora: string | null;
     golA: number; golB: number;
@@ -25,53 +34,66 @@ export function Home() {
   const polemiche = useMemo(() => Math.floor(Math.random() * 900) + 100, [])
   const navigate = useNavigate()
 
+  // Clamp igIndex when igPosts changes
+  const safeIgIndex = igPosts.length > 0 ? Math.min(igIndex, igPosts.length - 1) : 0
+
   useEffect(() => {
     getNews()
       .then(setNews)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
 
-    supabase.from('match_details').select('giornata').order('giornata', { ascending: false }).limit(1).single().then(({ data }) => {
-      if (data) setPartiteCount(data.giornata)
-    })
-    supabase.from('players').select('id', { count: 'exact', head: true }).then(({ count }) => {
-      if (count !== null) setGiocatoriCount(count)
-    })
-    supabase.from('home_widgets').select('tipo, attivo, payload').in('tipo', ['prossima_partita', 'instagram']).then(({ data: widgets }) => {
-      for (const w of widgets ?? []) {
-        if (w.tipo === 'prossima_partita' && w.attivo) setProssimaPartita(w.payload as any)
-        if (w.tipo === 'instagram' && w.attivo) {
-          const posts = ((w.payload as any)?.posts ?? []).filter((u: string) => u.trim())
-          if (posts.length > 0) setIgPosts(posts)
+    supabase.from('match_details').select('giornata').order('giornata', { ascending: false }).limit(1).single().then(
+      ({ data }) => { if (data) setPartiteCount(data.giornata) },
+      () => {},
+    )
+    supabase.from('players').select('id', { count: 'exact', head: true }).then(
+      ({ count }) => { if (count !== null) setGiocatoriCount(count) },
+      () => {},
+    )
+    supabase.from('home_widgets').select('tipo, attivo, payload').in('tipo', ['prossima_partita', 'instagram']).then(
+      ({ data: widgets }) => {
+        for (const w of widgets ?? []) {
+          if (w.tipo === 'prossima_partita' && w.attivo) setProssimaPartita(w.payload as { data: string; ora: string; luogo: string; nome: string })
+          if (w.tipo === 'instagram' && w.attivo) {
+            const raw = ((w.payload as { posts?: string[] })?.posts ?? []).filter((u: string) => u.trim())
+            const safe = raw.map(safeIgEmbedUrl).filter((u): u is string => u !== null)
+            if (safe.length > 0) setIgPosts(safe)
+          }
         }
-      }
-    })
+      },
+      () => {},
+    )
 
     // Fetch ultima partita
     supabase.from('match_details')
       .select('giornata, data, campo, ora, squadra, gol_squadra, gol, player_id, players(id, nome)')
       .order('giornata', { ascending: false })
-      .then(({ data: md }) => {
-        if (!md || md.length === 0) return
-        const maxG = (md as any[])[0].giornata
-        const rows = (md as any[]).filter((r: any) => r.giornata === maxG)
-        let golA = 0, golB = 0
-        const teamA: { player_id: string; nome: string; gol: number }[] = []
-        const teamB: { player_id: string; nome: string; gol: number }[] = []
-        for (const r of rows) {
-          if (r.squadra === 'A') {
-            if (golA === 0) golA = r.gol_squadra
-            teamA.push({ player_id: r.player_id, nome: r.players?.nome ?? '??', gol: r.gol })
-          } else {
-            if (golB === 0) golB = r.gol_squadra
-            teamB.push({ player_id: r.player_id, nome: r.players?.nome ?? '??', gol: r.gol })
+      .then(
+        ({ data: md }) => {
+          if (!md || md.length === 0) return
+          const maxG = (md as { giornata: number }[])[0].giornata
+          const rows = (md as any[]).filter((r: any) => r.giornata === maxG)
+          let golA: number | null = null
+          let golB: number | null = null
+          const teamA: { player_id: string; nome: string; gol: number }[] = []
+          const teamB: { player_id: string; nome: string; gol: number }[] = []
+          for (const r of rows) {
+            if (r.squadra === 'A') {
+              if (golA === null) golA = r.gol_squadra
+              teamA.push({ player_id: r.player_id, nome: r.players?.nome ?? '??', gol: r.gol })
+            } else {
+              if (golB === null) golB = r.gol_squadra
+              teamB.push({ player_id: r.player_id, nome: r.players?.nome ?? '??', gol: r.gol })
+            }
           }
-        }
-        setUltimaPartita({
-          giornata: maxG, data: rows[0].data, campo: rows[0].campo, ora: rows[0].ora,
-          golA, golB, teamA, teamB,
-        })
-      })
+          setUltimaPartita({
+            giornata: maxG, data: rows[0].data, campo: rows[0].campo, ora: rows[0].ora,
+            golA: golA ?? 0, golB: golB ?? 0, teamA, teamB,
+          })
+        },
+        () => {},
+      )
   }, [])
 
   // Group by giornata
@@ -233,7 +255,7 @@ export function Home() {
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                color: ultimaPartita.golA > ultimaPartita.golB ? 'var(--accent)' : 'var(--text-secondary)',
+                color: ultimaPartita.golA > ultimaPartita.golB ? 'var(--accent)' : ultimaPartita.golA === ultimaPartita.golB ? '#eab308' : 'var(--text-secondary)',
                 marginBottom: '0.2rem',
               }}>
                 Squadra A {ultimaPartita.golA > ultimaPartita.golB ? '🏆' : ''}
@@ -245,16 +267,16 @@ export function Home() {
               fontVariantNumeric: 'tabular-nums',
               letterSpacing: '2px',
             }}>
-              <span style={{ color: ultimaPartita.golA > ultimaPartita.golB ? 'var(--accent)' : 'var(--text-secondary)' }}>{ultimaPartita.golA}</span>
+              <span style={{ color: ultimaPartita.golA > ultimaPartita.golB ? 'var(--accent)' : ultimaPartita.golA === ultimaPartita.golB ? '#eab308' : 'var(--text-secondary)' }}>{ultimaPartita.golA}</span>
               <span style={{ color: '#555', margin: '0 0.3rem' }}>-</span>
-              <span style={{ color: ultimaPartita.golB > ultimaPartita.golA ? 'var(--accent)' : 'var(--text-secondary)' }}>{ultimaPartita.golB}</span>
+              <span style={{ color: ultimaPartita.golB > ultimaPartita.golA ? 'var(--accent)' : ultimaPartita.golA === ultimaPartita.golB ? '#eab308' : 'var(--text-secondary)' }}>{ultimaPartita.golB}</span>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                color: ultimaPartita.golB > ultimaPartita.golA ? 'var(--accent)' : 'var(--text-secondary)',
+                color: ultimaPartita.golB > ultimaPartita.golA ? 'var(--accent)' : ultimaPartita.golA === ultimaPartita.golB ? '#eab308' : 'var(--text-secondary)',
                 marginBottom: '0.2rem',
               }}>
                 Squadra B {ultimaPartita.golB > ultimaPartita.golA ? '🏆' : ''}
@@ -339,37 +361,122 @@ export function Home() {
           Seguici su Instagram
         </a>
 
-        {igPosts.length > 0 && (
+        {igPosts.length === 1 && (
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
+            borderRadius: 'var(--radius)',
+            overflow: 'hidden',
+            background: '#000',
             marginTop: '0.75rem',
           }}>
-            {igPosts.map((url, i) => {
-              const embedUrl = url.replace(/\/?(\?.*)?$/, '/embed')
-              return (
-                <div
-                  key={i}
-                  style={{
-                    borderRadius: 'var(--radius)',
-                    overflow: 'hidden',
-                    background: '#000',
-                  }}
+            <iframe
+              src={igPosts[0]}
+              loading="lazy"
+              style={{ width: '100%', minHeight: 480, border: 'none' }}
+              allowTransparency
+            />
+          </div>
+        )}
+
+        {igPosts.length > 1 && (
+          <div style={{ marginTop: '0.75rem', position: 'relative' }}>
+            <div style={{
+              borderRadius: 'var(--radius)',
+              overflow: 'hidden',
+              background: '#000',
+            }}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={safeIgIndex}
+                  initial={{ opacity: 0, x: 60 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -60 }}
+                  transition={{ duration: 0.25 }}
                 >
                   <iframe
-                    src={embedUrl}
-                    style={{
-                      width: '100%',
-                      minHeight: 480,
-                      border: 'none',
-                    }}
+                    src={igPosts[safeIgIndex]}
+                    loading="lazy"
+                    style={{ width: '100%', minHeight: 480, border: 'none' }}
                     allowTransparency
-                    scrolling="no"
                   />
-                </div>
-              )
-            })}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Navigation arrows */}
+            <button
+              onClick={() => setIgIndex((prev) => (prev - 1 + igPosts.length) % igPosts.length)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 8,
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.6)',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+              }}
+              aria-label="Precedente"
+            >
+              ‹
+            </button>
+            <button
+              onClick={() => setIgIndex((prev) => (prev + 1) % igPosts.length)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 8,
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.6)',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+              }}
+              aria-label="Successivo"
+            >
+              ›
+            </button>
+
+            {/* Dot indicators */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 6,
+              marginTop: '0.6rem',
+            }}>
+              {igPosts.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIgIndex(i)}
+                  style={{
+                    width: safeIgIndex === i ? 18 : 8,
+                    height: 8,
+                    borderRadius: 4,
+                    background: safeIgIndex === i ? 'var(--accent)' : 'rgba(255,255,255,0.25)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'all 0.25s',
+                  }}
+                  aria-label={`Post ${i + 1}`}
+                />
+              ))}
+            </div>
           </div>
         )}
       </motion.div>

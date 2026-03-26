@@ -2,22 +2,30 @@ import { supabase } from '../lib/supabase'
 import type { PlayerTrendResponse } from '../lib/schemas'
 
 export async function getPlayerTrend(id: string): Promise<PlayerTrendResponse> {
-  // Fetch player info + roles
-  const { data: player, error: playerError } = await supabase
-    .from('players')
-    .select('id, nome, soprannome, avatar_url, er, tratto, tenore_fisico, base_rating, last_er, delta_rating, player_roles(ruolo, ordine)')
-    .eq('id', id)
-    .single()
+  // Fetch player info + match details + max giornata in parallel
+  const [playerResult, matchResult, maxGiornataResult] = await Promise.all([
+    supabase
+      .from('players')
+      .select('id, nome, soprannome, avatar_url, er, tratto, tenore_fisico, base_rating, last_er, delta_rating, player_roles(ruolo, ordine)')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('match_details')
+      .select('player_id, giornata, data, er, voto, gol, autogol, assist, risultato, differenza_reti, squadra')
+      .eq('player_id', id)
+      .order('giornata', { ascending: true }),
+    supabase
+      .from('match_details')
+      .select('giornata')
+      .order('giornata', { ascending: false })
+      .limit(1)
+      .single(),
+  ])
 
+  const { data: player, error: playerError } = playerResult
   if (playerError || !player) throw new Error(playerError?.message ?? 'Giocatore non trovato')
 
-  // Fetch match details directly (includes autogol and squadra)
-  const { data: matchRows, error: matchError } = await supabase
-    .from('match_details')
-    .select('player_id, giornata, data, er, voto, gol, autogol, assist, risultato, differenza_reti, squadra')
-    .eq('player_id', id)
-    .order('giornata', { ascending: true })
-
+  const { data: matchRows, error: matchError } = matchResult
   if (matchError) throw new Error(matchError.message)
 
   const trendRows = (matchRows ?? []) as Array<{
@@ -87,15 +95,7 @@ export async function getPlayerTrend(id: string): Promise<PlayerTrendResponse> {
   // Presence/absence streak - need to know total giornate
   const giornateGiocate = new Set(trendRows.map((r) => r.giornata))
 
-  // Get max giornata from all match_details
-  const { data: maxGiornataRow } = await supabase
-    .from('match_details')
-    .select('giornata')
-    .order('giornata', { ascending: false })
-    .limit(1)
-    .single()
-
-  const maxGiornata = maxGiornataRow?.giornata ?? 0
+  const maxGiornata = maxGiornataResult.data?.giornata ?? 0
   const assenze = maxGiornata - presenze
 
   // Presence/absence streak from end (alternative)

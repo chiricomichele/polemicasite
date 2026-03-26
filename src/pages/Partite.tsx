@@ -30,6 +30,7 @@ export function Partite() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [visible, setVisible] = useState(10)
 
   useEffect(() => {
     supabase
@@ -49,14 +50,14 @@ export function Partite() {
               data: r.data,
               campo: r.campo,
               ora: r.ora,
-              golA: 0,
-              golB: 0,
+              golA: -1,
+              golB: -1,
               players: [],
             }
           }
           const m = grouped[r.giornata]
-          if (r.squadra === 'A' && m.golA === 0) m.golA = r.gol_squadra
-          if (r.squadra === 'B' && m.golB === 0) m.golB = r.gol_squadra
+          if (r.squadra === 'A' && m.golA === -1) m.golA = r.gol_squadra
+          if (r.squadra === 'B' && m.golB === -1) m.golB = r.gol_squadra
           m.players.push({
             player_id: r.player_id,
             nome: r.players?.nome ?? '??',
@@ -69,7 +70,8 @@ export function Partite() {
           })
         }
 
-        setMatches(Object.values(grouped).sort((a, b) => b.giornata - a.giornata))
+        const list = Object.values(grouped).map(m => ({ ...m, golA: m.golA === -1 ? 0 : m.golA, golB: m.golB === -1 ? 0 : m.golB }))
+        setMatches(list.sort((a, b) => b.giornata - a.giornata))
         setLoading(false)
       })
   }, [])
@@ -95,7 +97,7 @@ export function Partite() {
       {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
 
       <AnimatePresence>
-        {matches.map((m) => {
+        {matches.slice(0, visible).map((m) => {
           const isOpen = expanded.has(m.giornata)
           const teamA = m.players.filter(p => p.squadra === 'A')
           const teamB = m.players.filter(p => p.squadra === 'B')
@@ -210,6 +212,25 @@ export function Partite() {
           )
         })}
       </AnimatePresence>
+
+      {!loading && visible < matches.length && (
+        <button
+          onClick={() => setVisible((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.7rem 2rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
 
       {!loading && matches.length === 0 && !error && (
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '3rem' }}>

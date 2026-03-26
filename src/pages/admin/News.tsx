@@ -16,6 +16,7 @@ export function AdminNews() {
   const [titolo, setTitolo] = useState('')
   const [corpo, setCorpo] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [visibleGroups, setVisibleGroups] = useState(5)
 
   const loadData = () => {
     getNews().then(setNews).catch(() => {}).finally(() => setLoading(false))
@@ -64,6 +65,7 @@ export function AdminNews() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questa news?')) return
     const { error } = await supabase.from('news').delete().eq('id', id)
     if (error) toast.error(error.message)
     else { toast.success('News eliminata'); loadData() }
@@ -127,7 +129,7 @@ export function AdminNews() {
 
       {loading && <Skeleton height="2.5rem" count={6} />}
 
-      {giornate.map((g) => (
+      {giornate.slice(0, visibleGroups).map((g) => (
         <div key={g} style={{ marginBottom: '1.25rem' }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
             Giornata {g}
@@ -146,6 +148,24 @@ export function AdminNews() {
           ))}
         </div>
       ))}
+      {visibleGroups < giornate.length && (
+        <button
+          onClick={() => setVisibleGroups((v) => v + 5)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
     </div>
   )
 }

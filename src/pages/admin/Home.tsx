@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { Skeleton } from '../../components/Skeleton'
+import { ToggleSwitch } from '../../components/ToggleSwitch'
 
 interface ProssimaPartita {
   data: string
@@ -115,34 +116,7 @@ useEffect(() => {
       <form onSubmit={handleSubmit} style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>Prossima Partita</h3>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              {attivo ? 'Attivo' : 'Disattivo'}
-            </span>
-            <div
-              onClick={() => setAttivo(!attivo)}
-              style={{
-                width: 40,
-                height: 22,
-                borderRadius: 11,
-                background: attivo ? 'var(--accent)' : '#444',
-                position: 'relative',
-                transition: 'background 0.2s',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                background: '#fff',
-                position: 'absolute',
-                top: 2,
-                left: attivo ? 20 : 2,
-                transition: 'left 0.2s',
-              }} />
-            </div>
-          </label>
+          <ToggleSwitch value={attivo} onChange={setAttivo} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -186,34 +160,7 @@ useEffect(() => {
       <form onSubmit={handleIgSubmit} style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: '1.25rem', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>Instagram</h3>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              {igAttivo ? 'Attivo' : 'Disattivo'}
-            </span>
-            <div
-              onClick={() => setIgAttivo(!igAttivo)}
-              style={{
-                width: 40,
-                height: 22,
-                borderRadius: 11,
-                background: igAttivo ? 'var(--accent)' : '#444',
-                position: 'relative',
-                transition: 'background 0.2s',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                background: '#fff',
-                position: 'absolute',
-                top: 2,
-                left: igAttivo ? 20 : 2,
-                transition: 'left 0.2s',
-              }} />
-            </div>
-          </label>
+          <ToggleSwitch value={igAttivo} onChange={setIgAttivo} />
         </div>
 
         {igPosts.map((url, i) => (

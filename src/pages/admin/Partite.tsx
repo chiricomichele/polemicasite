@@ -14,15 +14,10 @@ interface MatchRow {
   autogol: string
   assist: string
   voto: string
-  gol_squadra: string
-  gol_avversari: string
-  risultato: string
-  differenza_reti: string
 }
 
 const emptyRow = (): MatchRow => ({
-  squadra: 'A', player_id: '', er: '', gol: '0', autogol: '0', assist: '0',
-  voto: '', gol_squadra: '', gol_avversari: '', risultato: 'V', differenza_reti: '0',
+  squadra: 'A', player_id: '', er: '', gol: '0', autogol: '0', assist: '0', voto: '',
 })
 
 export function AdminPartite() {
@@ -32,12 +27,15 @@ export function AdminPartite() {
   const [data, setData] = useState('')
   const [campo, setCampo] = useState('')
   const [ora, setOra] = useState('')
+  const [golSquadraA, setGolSquadraA] = useState('')
+  const [golSquadraB, setGolSquadraB] = useState('')
   const [rows, setRows] = useState<MatchRow[]>([emptyRow()])
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
 
   // Existing matches list
   const [matches, setMatches] = useState<{ giornata: number; data: string; campo: string | null; golA: number; golB: number; count: number }[]>([])
+  const [visibleMatches, setVisibleMatches] = useState(10)
 
   const loadData = () => {
     getPlayers().then(setPlayers).catch(() => {})
@@ -48,14 +46,13 @@ export function AdminPartite() {
       .then(({ data: md }) => {
         if (!md) { setLoading(false); return }
         const grouped = md.reduce<Record<number, { data: string; campo: string | null; golA: number; golB: number; count: number }>>((acc, r) => {
-          if (!acc[r.giornata]) acc[r.giornata] = { data: r.data, campo: r.campo, golA: 0, golB: 0, count: 0 }
+          if (!acc[r.giornata]) acc[r.giornata] = { data: r.data, campo: r.campo, golA: -1, golB: -1, count: 0 }
           acc[r.giornata].count++
-          // gol_squadra is the same for all players in a team, pick it once per team
-          if (r.squadra === 'A' && acc[r.giornata].golA === 0) acc[r.giornata].golA = r.gol_squadra
-          if (r.squadra === 'B' && acc[r.giornata].golB === 0) acc[r.giornata].golB = r.gol_squadra
+          if (r.squadra === 'A' && acc[r.giornata].golA === -1) acc[r.giornata].golA = r.gol_squadra
+          if (r.squadra === 'B' && acc[r.giornata].golB === -1) acc[r.giornata].golB = r.gol_squadra
           return acc
         }, {})
-        setMatches(Object.entries(grouped).map(([g, v]) => ({ giornata: Number(g), ...v })).sort((a, b) => b.giornata - a.giornata))
+        setMatches(Object.entries(grouped).map(([g, v]) => ({ giornata: Number(g), ...v, golA: v.golA === -1 ? 0 : v.golA, golB: v.golB === -1 ? 0 : v.golB })).sort((a, b) => b.giornata - a.giornata))
         setLoading(false)
       })
   }
@@ -70,25 +67,37 @@ export function AdminPartite() {
     e.preventDefault()
     if (!giornata || !data) { toast.error('Giornata e Data obbligatori'); return }
 
+    const golA = parseInt(golSquadraA)
+    const golB = parseInt(golSquadraB)
+    if (isNaN(golA) || isNaN(golB)) { toast.error('Inserisci i gol di entrambe le squadre'); return }
+
     const toInsert = rows
       .filter((r) => r.player_id)
-      .map((r) => ({
-        giornata: parseInt(giornata),
-        data,
-        campo: campo || null,
-        ora: ora || null,
-        squadra: r.squadra,
-        player_id: r.player_id,
-        er: r.er ? parseFloat(r.er) : null,
-        gol: parseInt(r.gol) || 0,
-        autogol: parseInt(r.autogol) || 0,
-        assist: parseInt(r.assist) || 0,
-        voto: r.voto ? parseFloat(r.voto) : null,
-        gol_squadra: parseInt(r.gol_squadra) || 0,
-        gol_avversari: parseInt(r.gol_avversari) || 0,
-        risultato: r.risultato,
-        differenza_reti: parseInt(r.differenza_reti) || 0,
-      }))
+      .map((r) => {
+        const isTeamA = r.squadra === 'A'
+        const myGoals = isTeamA ? golA : golB
+        const theirGoals = isTeamA ? golB : golA
+        const diff = myGoals - theirGoals
+        const risultato = diff > 0 ? 'V' : diff < 0 ? 'S' : 'P'
+
+        return {
+          giornata: parseInt(giornata),
+          data,
+          campo: campo || null,
+          ora: ora || null,
+          squadra: r.squadra,
+          player_id: r.player_id,
+          er: r.er ? parseFloat(r.er) : null,
+          gol: parseInt(r.gol) || 0,
+          autogol: parseInt(r.autogol) || 0,
+          assist: parseInt(r.assist) || 0,
+          voto: r.voto ? parseFloat(r.voto) : null,
+          gol_squadra: myGoals,
+          gol_avversari: theirGoals,
+          risultato,
+          differenza_reti: diff,
+        }
+      })
 
     if (toInsert.length === 0) { toast.error('Aggiungi almeno un giocatore'); return }
 
@@ -96,7 +105,6 @@ export function AdminPartite() {
 
     let error: any = null
     if (editing !== null) {
-      // Delete old rows first, then re-insert
       const { error: delErr } = await supabase.from('match_details').delete().eq('giornata', editing)
       if (delErr) { error = delErr } else {
         const { error: insErr } = await supabase.from('match_details').insert(toInsert)
@@ -131,6 +139,13 @@ export function AdminPartite() {
     setData(md[0].data)
     setCampo(md[0].campo || '')
     setOra(md[0].ora ? md[0].ora.slice(0, 5) : '')
+
+    // Extract team-level goals from first row of each team
+    const teamA = md.find((r: any) => r.squadra === 'A')
+    const teamB = md.find((r: any) => r.squadra === 'B')
+    setGolSquadraA(teamA ? String(teamA.gol_squadra) : '0')
+    setGolSquadraB(teamB ? String(teamB.gol_squadra) : '0')
+
     setRows(md.map((r: any) => ({
       squadra: r.squadra,
       player_id: r.player_id,
@@ -139,10 +154,6 @@ export function AdminPartite() {
       autogol: String(r.autogol),
       assist: String(r.assist),
       voto: r.voto != null ? String(r.voto) : '',
-      gol_squadra: String(r.gol_squadra),
-      gol_avversari: String(r.gol_avversari),
-      risultato: r.risultato,
-      differenza_reti: String(r.differenza_reti),
     })))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -153,10 +164,13 @@ export function AdminPartite() {
     setData('')
     setCampo('')
     setOra('')
+    setGolSquadraA('')
+    setGolSquadraB('')
     setRows([emptyRow()])
   }
 
   const handleDelete = async (g: number) => {
+    if (!confirm(`Sei sicuro di voler eliminare la giornata ${g}? Tutti i dati verranno persi.`)) return
     const { error } = await supabase.from('match_details').delete().eq('giornata', g)
     if (error) toast.error(error.message)
     else { toast.success(`Giornata ${g} eliminata`); if (editing === g) cancelEdit(); loadData() }
@@ -197,12 +211,49 @@ export function AdminPartite() {
           </div>
         </div>
 
+        {/* Team scores */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+          marginBottom: '1.25rem',
+          padding: '0.75rem',
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: '8px',
+          border: '1px solid #333',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ ...labelStyle, marginBottom: '0.4rem' }}>Gol Squadra A</div>
+            <input
+              type="number"
+              min="0"
+              value={golSquadraA}
+              onChange={(e) => setGolSquadraA(e.target.value)}
+              required
+              style={{ ...fieldStyle, width: 60, textAlign: 'center', fontSize: '1.2rem', fontWeight: 700 }}
+            />
+          </div>
+          <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-secondary)', marginTop: '1rem' }}>—</span>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ ...labelStyle, marginBottom: '0.4rem' }}>Gol Squadra B</div>
+            <input
+              type="number"
+              min="0"
+              value={golSquadraB}
+              onChange={(e) => setGolSquadraB(e.target.value)}
+              required
+              style={{ ...fieldStyle, width: 60, textAlign: 'center', fontSize: '1.2rem', fontWeight: 700 }}
+            />
+          </div>
+        </div>
+
         {/* Player rows */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #333' }}>
-                {['Sq', 'Giocatore', 'ER', 'Gol', 'AG', 'Ass', 'Voto', 'GS', 'GA', 'Ris', 'DR', ''].map((h) => (
+                {['Sq', 'Giocatore', 'ER', 'Gol', 'AG', 'Ass', 'Voto', ''].map((h) => (
                   <th key={h} style={{ padding: '0.4rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.7rem', textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>
@@ -227,16 +278,6 @@ export function AdminPartite() {
                   <td style={{ padding: '0.3rem' }}><input type="number" value={row.autogol} onChange={(e) => updateRow(idx, 'autogol', e.target.value)} style={{ ...fieldStyle, width: 45 }} /></td>
                   <td style={{ padding: '0.3rem' }}><input type="number" value={row.assist} onChange={(e) => updateRow(idx, 'assist', e.target.value)} style={{ ...fieldStyle, width: 45 }} /></td>
                   <td style={{ padding: '0.3rem' }}><input value={row.voto} onChange={(e) => updateRow(idx, 'voto', e.target.value)} style={{ ...fieldStyle, width: 55 }} placeholder="-" /></td>
-                  <td style={{ padding: '0.3rem' }}><input type="number" value={row.gol_squadra} onChange={(e) => updateRow(idx, 'gol_squadra', e.target.value)} style={{ ...fieldStyle, width: 45 }} /></td>
-                  <td style={{ padding: '0.3rem' }}><input type="number" value={row.gol_avversari} onChange={(e) => updateRow(idx, 'gol_avversari', e.target.value)} style={{ ...fieldStyle, width: 45 }} /></td>
-                  <td style={{ padding: '0.3rem' }}>
-                    <select value={row.risultato} onChange={(e) => updateRow(idx, 'risultato', e.target.value)} style={{ ...fieldStyle, width: 50 }}>
-                      <option value="V">V</option>
-                      <option value="P">P</option>
-                      <option value="S">S</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: '0.3rem' }}><input type="number" value={row.differenza_reti} onChange={(e) => updateRow(idx, 'differenza_reti', e.target.value)} style={{ ...fieldStyle, width: 45 }} /></td>
                   <td style={{ padding: '0.3rem' }}>
                     <button type="button" onClick={() => setRows((p) => p.filter((_, i) => i !== idx))} style={{ color: 'var(--danger)', fontSize: '1.1rem' }}>×</button>
                   </td>
@@ -276,7 +317,7 @@ export function AdminPartite() {
       {/* Existing matches */}
       <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Partite inserite</h3>
       {loading && <Skeleton height="2.5rem" count={4} />}
-      {matches.map((m) => (
+      {matches.slice(0, visibleMatches).map((m) => (
         <div key={m.giornata} style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -297,6 +338,24 @@ export function AdminPartite() {
           </div>
         </div>
       ))}
+      {visibleMatches < matches.length && (
+        <button
+          onClick={() => setVisibleMatches((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
     </div>
   )
 }

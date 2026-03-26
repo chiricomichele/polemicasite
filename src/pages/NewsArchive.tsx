@@ -10,6 +10,7 @@ export function NewsArchive() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [visibleGroups, setVisibleGroups] = useState(5)
 
   useEffect(() => {
     getNews()
@@ -35,7 +36,7 @@ export function NewsArchive() {
       {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
 
       <AnimatePresence>
-        {giornate.map((g) => (
+        {giornate.slice(0, visibleGroups).map((g) => (
           <div key={g} style={{ marginBottom: '1.5rem' }}>
             <div style={{
               display: 'inline-block',
@@ -66,6 +67,25 @@ export function NewsArchive() {
           </div>
         ))}
       </AnimatePresence>
+
+      {!loading && visibleGroups < giornate.length && (
+        <button
+          onClick={() => setVisibleGroups((v) => v + 5)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.7rem 2rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
 
       {!loading && news.length === 0 && !error && (
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '3rem' }}>

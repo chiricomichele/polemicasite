@@ -1,6 +1,13 @@
-import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import logo from '../resources/logo.jpeg'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 export function Layout() {
   return (
@@ -10,8 +17,14 @@ export function Layout() {
       width: '100%',
       paddingBottom: '5rem',
       minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
-      <Outlet />
+      <ScrollToTop />
+
+      <div style={{ flex: 1 }}>
+        <Outlet />
+      </div>
 
       {/* Footer */}
       <footer style={{

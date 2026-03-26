@@ -142,11 +142,14 @@ export function Profilo() {
 
   useEffect(() => {
     if (!id) return
+    let cancelled = false
     setLoading(true)
+    setError(null)
     getPlayerTrend(id)
-      .then(setData)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false))
+      .then((res) => { if (!cancelled) setData(res) })
+      .catch((e: Error) => { if (!cancelled) setError(e.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [id])
 
   if (loading) return <div style={{ padding: '1rem' }}><Skeleton height="2rem" count={8} /></div>

@@ -12,7 +12,7 @@ export async function getClassifiche(
   // Fetch aggregated stats from the view
   const { data: rows, error } = await supabase
     .from('v_gcp')
-    .select('*')
+    .select('id, nome, presenze, gol_totali, assist_totali, media_voto, plus_minus')
 
   if (error) throw new Error(error.message)
   if (!rows || rows.length === 0) return { data: [], total: 0 }

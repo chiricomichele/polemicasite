@@ -25,13 +25,17 @@ export function Stats() {
   const [tab, setTab] = useState<Tab>('marcatori')
   const [rows, setRows] = useState<ClassificaRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [visible, setVisible] = useState(10)
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
+    setVisible(10)
     getClassifiche(tab)
-      .then((res) => setRows(res.data))
-      .catch(() => setRows([]))
-      .then(() => setLoading(false))
+      .then((res) => { if (!cancelled) setRows(res.data) })
+      .catch(() => { if (!cancelled) setRows([]) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [tab])
 
   return (
@@ -68,7 +72,7 @@ export function Stats() {
 
       {loading && <Skeleton height="3rem" count={8} />}
 
-      {!loading && rows.map((row, idx) => (
+      {!loading && rows.slice(0, visible).map((row, idx) => (
         <motion.div
           key={row.id}
           initial={{ opacity: 0, x: -20 }}
@@ -126,6 +130,25 @@ export function Stats() {
           </Link>
         </motion.div>
       ))}
+
+      {!loading && visible < rows.length && (
+        <button
+          onClick={() => setVisible((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.7rem 2rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
 
       {!loading && rows.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '3rem' }}>

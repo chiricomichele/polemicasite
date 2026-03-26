@@ -14,6 +14,7 @@ export function AdminManifesto() {
   const [nomeArticolo, setNomeArticolo] = useState('')
   const [corpo, setCorpo] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [visibleArticles, setVisibleArticles] = useState(10)
 
   const loadData = () => {
     getManifesto().then(setArticles).catch(() => {}).finally(() => setLoading(false))
@@ -52,6 +53,7 @@ export function AdminManifesto() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo articolo?')) return
     const { error } = await supabase.from('manifesto').delete().eq('id', id)
     if (error) toast.error(error.message)
     else { toast.success('Articolo eliminato'); loadData() }
@@ -95,7 +97,7 @@ export function AdminManifesto() {
 
       {loading && <Skeleton height="2.5rem" count={5} />}
 
-      {articles.map((a) => (
+      {articles.slice(0, visibleArticles).map((a) => (
         <div key={a.id} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: 'var(--surface)', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.5rem',
@@ -110,6 +112,24 @@ export function AdminManifesto() {
           </div>
         </div>
       ))}
+      {visibleArticles < articles.length && (
+        <button
+          onClick={() => setVisibleArticles((v) => v + 10)}
+          style={{
+            display: 'block',
+            margin: '1rem auto',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid #333',
+          }}
+        >
+          Mostra altri
+        </button>
+      )}
     </div>
   )
 }
