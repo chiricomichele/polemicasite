@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: update-deployment
+  namespace: tekton-tasks
+spec:
+  description: |
+    Updates the deployment manifest with the new Docker image tag,
+    commits, and pushes the changes to the repository.
+  params:
+  - name: image-tag
+    type: string
+    description: "Docker image tag (e.g., v1.0.0)"
+  - name: deployment-path
+    type: string
+    default: "eng/k8s/deployment-webapp.yaml"
+    description: "Path to the Kubernetes deployment manifest"
+  workspaces:
+  - name: source
+    description: "Git repository workspace"
+  steps:
+  - name: update-image
+    image: alpine/git:v2.36.2
+    workingDir: $(workspaces.source.path)
+    script: |
+      #!/bin/sh
+      set -e
+
+      # Configure git
+      git config --global user.email "pipeline@polemicasite.local"
+      git config --global user.name "Tekton Pipeline"
+
+      # Update the image tag in deployment manifest
+      # Replace image: michelechirico/polemicasite:* with michelechirico/polemicasite:TAG
+      sed -i "s|image: michelechirico/polemicasite:.*|image: michelechirico/polemicasite:$(params.image-tag)|g" $(params.deployment-path)
+
+      # Verify the change
+      echo "Updated deployment manifest:"
+      grep "image: michelechirico/polemicasite:" $(params.deployment-path)
+
+      # Stage and commit
+      git add $(params.deployment-path)
+      git commit -m "chore: bump image to $(params.image-tag)"

@@ -1,0 +1,5 @@
+cloud_provider   = "minikube"
+minikube_profile = "minikube"
+
+# PostgreSQL Configuration
+postgresql_password = "CHANGE_ME_SECURE_PASSWORD_HERE"

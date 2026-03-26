@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: polemicasite
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ssh://git@github.com/polemicaleague-source/polemicasite.git
+    targetRevision: HEAD
+    path: eng/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: polemicasite
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

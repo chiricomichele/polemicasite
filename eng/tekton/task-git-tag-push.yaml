@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-tag-and-push
+  namespace: tekton-tasks
+spec:
+  description: |
+    Pushes committed changes to git repository and creates a release tag.
+  params:
+  - name: release-version
+    type: string
+    description: "Release version tag (e.g., v1.0.0)"
+  - name: git-branch
+    type: string
+    default: "main"
+    description: "Git branch to push to"
+  workspaces:
+  - name: source
+    description: "Git repository workspace"
+  - name: ssh-credentials
+    description: "SSH credentials for git operations"
+  steps:
+  - name: push-and-tag
+    image: alpine/git:v2.36.2
+    workingDir: $(workspaces.source.path)
+    env:
+    - name: GIT_SSH_COMMAND
+      value: "ssh -i $(workspaces.ssh-credentials.path)/ssh-privatekey -o StrictHostKeyChecking=no"
+    script: |
+      #!/bin/sh
+      set -e
+
+      # Configure git
+      git config --global user.email "pipeline@polemicasite.local"
+      git config --global user.name "Tekton Pipeline"
+
+      echo "Pushing changes to $(params.git-branch)..."
+      git push origin $(params.git-branch)
+
+      echo "Creating and pushing git tag $(params.release-version)..."
+      git tag -a $(params.release-version) -m "Release $(params.release-version)"
+      git push origin $(params.release-version)
+
+      echo "✅ Pushed to $(params.git-branch) and created tag $(params.release-version)"

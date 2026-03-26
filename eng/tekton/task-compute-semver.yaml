@@ -1,0 +1,90 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: compute-semver
+  namespace: tekton-tasks
+spec:
+  description: |
+    Reads the last git commit message and looks for '+semver: major|minor|patch'.
+    Defaults to 'patch' if not found. Increments the latest semver git tag
+    and outputs the new version string (e.g., v1.0.1).
+    Convention: include '+semver: major', '+semver: minor', or '+semver: patch'
+    anywhere in the commit message.
+  workspaces:
+  - name: source
+    description: "Git repository workspace"
+  results:
+  - name: new-version
+    description: "The computed new semver tag (e.g., v1.0.1)"
+  - name: new-image
+    description: "Full Docker image reference (e.g., michelechirico/polemicasite:v1.0.1)"
+  steps:
+  - name: compute
+    image: alpine/git:v2.36.2
+    workingDir: $(workspaces.source.path)
+    script: |
+      #!/bin/sh
+      set -e
+
+      IMAGE_BASE="michelechirico/polemicasite"
+
+      # Read last commit message
+      COMMIT_MSG=$(git log -1 --pretty=%B)
+      echo "Last commit message: ${COMMIT_MSG}"
+
+      # Parse +semver: <type> from commit message (case-insensitive)
+      BUMP=$(echo "$COMMIT_MSG" | grep -i '+semver:' | grep -oiE '\+semver:[[:space:]]*(major|minor|patch)' | head -1 | sed 's/+semver://i' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+
+      if [ -z "$BUMP" ]; then
+        BUMP="patch"
+        echo "No +semver: tag found in commit message, defaulting to 'patch'"
+      else
+        echo "Found bump type from commit message: ${BUMP}"
+      fi
+
+      # Get the latest semver tag, or default to v0.0.0 if none exists
+      LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
+      if [ -z "$LAST_TAG" ]; then
+        LAST_TAG="v0.0.0"
+        echo "No existing semver tag found, starting from ${LAST_TAG}"
+      else
+        echo "Last tag: ${LAST_TAG}"
+      fi
+
+      # Strip leading 'v'
+      VERSION="${LAST_TAG#v}"
+
+      # Parse major.minor.patch
+      MAJOR=$(echo "$VERSION" | cut -d. -f1)
+      MINOR=$(echo "$VERSION" | cut -d. -f2)
+      PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+      # Increment based on bump type
+      case "$BUMP" in
+        major)
+          MAJOR=$((MAJOR + 1))
+          MINOR=0
+          PATCH=0
+          ;;
+        minor)
+          MINOR=$((MINOR + 1))
+          PATCH=0
+          ;;
+        patch)
+          PATCH=$((PATCH + 1))
+          ;;
+        *)
+          echo "ERROR: bump must be 'patch', 'minor', or 'major'. Got: '$BUMP'"
+          exit 1
+          ;;
+      esac
+
+      NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+      NEW_IMAGE="${IMAGE_BASE}:${NEW_VERSION}"
+
+      echo "Bumping $BUMP: ${LAST_TAG} → ${NEW_VERSION}"
+      echo "Image: ${NEW_IMAGE}"
+
+      # Write results for use in subsequent pipeline tasks
+      printf "%s" "${NEW_VERSION}" | tee $(results.new-version.path)
+      printf "%s" "${NEW_IMAGE}" | tee $(results.new-image.path)

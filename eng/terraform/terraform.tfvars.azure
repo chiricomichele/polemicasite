@@ -1,0 +1,9 @@
+cloud_provider       = "azure"
+azure_resource_group = "polemicasite-rg"
+azure_location       = "northeurope"
+aks_cluster_name     = "polemicasite-aks"
+aks_node_count       = 1
+aks_node_vm_size     = "Standard_D2als_v6"
+
+# PostgreSQL Configuration
+postgresql_password = "CHANGE_ME_SECURE_PASSWORD_HERE"

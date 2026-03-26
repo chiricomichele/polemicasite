@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: polemicasite-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: ssh://git@github.com/polemicaleague-source/polemicasite.git
+  sshPrivateKey: |
+    # IMPORTANT: Replace with your actual deploy key (read-only for security).
+    # This key must be managed via CI/secret manager, NEVER commit to git.
+    # Generate: ssh-keygen -t ed25519 -f deploy_key -C "argocd"
+    # Add public key to GitHub deploy keys (Settings > Deploy keys)
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    <PASTE_YOUR_DEPLOY_KEY_HERE>
+    -----END OPENSSH PRIVATE KEY-----
+  insecure: "false"
+  enableLfs: "true"

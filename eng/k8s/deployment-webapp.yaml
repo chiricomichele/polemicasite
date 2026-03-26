@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: polemicasite-web
+  namespace: polemicasite
+  labels:
+    app: polemicasite-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: polemicasite-web
+  template:
+    metadata:
+      labels:
+        app: polemicasite-web
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: polemicasite-web
+        image: michelechirico/polemicasite:v0.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
