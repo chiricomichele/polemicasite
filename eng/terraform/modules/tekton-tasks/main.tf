@@ -86,7 +86,7 @@ data "http" "tekton_git_clone_task" {
 }
 
 resource "kubectl_manifest" "tekton_git_clone_task" {
-  yaml_body = data.http.tekton_git_clone_task.response_body
+  yaml_body          = data.http.tekton_git_clone_task.response_body
   override_namespace = kubernetes_namespace.tekton_tasks.metadata[0].name
 }
 
@@ -96,6 +96,6 @@ data "http" "tekton_buildah_task" {
 }
 
 resource "kubectl_manifest" "tekton_buildah_task" {
-  yaml_body = data.http.tekton_buildah_task.response_body
+  yaml_body          = data.http.tekton_buildah_task.response_body
   override_namespace = kubernetes_namespace.tekton_tasks.metadata[0].name
 }

@@ -34,18 +34,18 @@ provider "azurerm" {
 }
 
 provider "kubernetes" {
-  config_path    = "~/.kube/config"
+  config_path    = pathexpand("~/.kube/config")
   config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
 }
 
 provider "kubectl" {
-  config_path    = "~/.kube/config"
+  config_path    = pathexpand("~/.kube/config")
   config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
 }
 
 provider "helm" {
   kubernetes {
-    config_path    = "~/.kube/config"
+    config_path    = pathexpand("~/.kube/config")
     config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
   }
 }

@@ -24,8 +24,7 @@ resource "kubernetes_namespace" "postgresql" {
 # Deploy PostgreSQL using Helm
 resource "helm_release" "postgresql" {
   name             = var.postgresql_release_name
-  repository       = "https://charts.bitnami.com/bitnami"
-  chart            = "postgresql"
+  chart            = "oci://registry-1.docker.io/bitnamicharts/postgresql"
   namespace        = kubernetes_namespace.postgresql.metadata[0].name
   version          = var.postgresql_version
   create_namespace = false

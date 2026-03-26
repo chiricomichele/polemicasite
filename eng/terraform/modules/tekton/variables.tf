@@ -4,6 +4,6 @@ variable "tekton_version" {
 }
 
 variable "tekton_dashboard_version" {
-  description = "Version of Tekton Dashboard Helm chart"
+  description = "Version tag of Tekton Dashboard official release manifest"
   type        = string
 }

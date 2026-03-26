@@ -43,19 +43,19 @@ variable "minikube_profile" {
 variable "tekton_version" {
   description = "Version of Tekton Pipelines Helm chart"
   type        = string
-  default     = "1.0.5"
+  default     = "1.9.1"
 }
 
 variable "argocd_version" {
   description = "Version of ArgoCD Helm chart"
   type        = string
-  default     = "7.8.21"
+  default     = "9.4.16"
 }
 
 variable "tekton_dashboard_version" {
-  description = "Version of Tekton Dashboard Helm chart"
+  description = "Version tag of Tekton Dashboard official release manifest (for example v0.66.0)"
   type        = string
-  default     = "0.1.2"
+  default     = "v0.66.0"
 }
 
 # PostgreSQL Configuration
@@ -74,7 +74,7 @@ variable "postgresql_release_name" {
 variable "postgresql_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "14.10.0"
+  default     = "18.5.14"
 }
 
 variable "postgresql_username" {

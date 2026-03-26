@@ -13,7 +13,7 @@ variable "postgresql_release_name" {
 variable "postgresql_version" {
   description = "PostgreSQL Helm chart version"
   type        = string
-  default     = "14.10.0"
+  default     = "18.5.14"
 }
 
 variable "postgresql_username" {

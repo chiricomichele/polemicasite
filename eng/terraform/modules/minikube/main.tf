@@ -17,11 +17,7 @@ terraform {
 # Prerequisito: minikube deve essere installato sulla macchina locale.
 resource "null_resource" "minikube_start" {
   provisioner "local-exec" {
-    command = <<-EOT
-      minikube start --profile=${var.minikube_profile} --driver=docker --memory=4096 --cpus=2
-      minikube update-context --profile=${var.minikube_profile}
-      kubectl wait --for=condition=ready node --all --timeout=120s
-    EOT
+    command = "minikube start --profile=${var.minikube_profile} --driver=docker --memory=4096 --cpus=2 && kubectl wait --for=condition=ready node --all --timeout=120s"
   }
 
   triggers = {
