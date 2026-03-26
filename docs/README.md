@@ -1,6 +1,6 @@
 # Polemica League - Documentazione Tecnica
 
-Benvenuto nella documentazione tecnica di **Polemica League**, un'applicazione web per la gestione di una lega calcistica amatoriale con statistiche, classifiche, rivalità e molto altro.
+Benvenuto nella documentazione tecnica di **Polemica League**, un'applicazione web Progressive Web App (PWA) per la gestione di una lega calcistica amatoriale con statistiche, classifiche, rivalità e molto altro.
 
 ## 📚 Indice della Documentazione
 
@@ -10,6 +10,8 @@ Benvenuto nella documentazione tecnica di **Polemica League**, un'applicazione w
 4. [**API e Integrazioni**](./04-api.md) - Documentazione delle API e delle integrazioni esterne
 5. [**Deployment**](./05-deployment.md) - Guida al deployment su Netlify e Supabase
 6. [**Workflow di Sviluppo**](./06-workflow.md) - Best practices e workflow per lo sviluppo
+7. [**Variabili d'Ambiente**](./07-env-setup.md) - Guida rapida alla configurazione delle variabili d'ambiente
+8. [**PWA Setup**](./08-pwa-setup.md) - Guida alla Progressive Web App e installazione
 
 ## 🎯 Panoramica del Progetto
 

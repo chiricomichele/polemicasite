@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Layout } from './components/Layout'
+import { InstallPWA } from './components/InstallPWA'
+import { PWAStatus } from './components/PWAStatus'
 import { Home } from './pages/Home'
 import { Stats } from './pages/Stats'
 import { OneVsOne } from './pages/OneVsOne'
@@ -48,6 +50,10 @@ function App() {
             <Route path="rivalita" element={<AdminRivalita />} />
           </Route>
         </Routes>
+        
+        {/* Componenti PWA opzionali - rimuovi se non li vuoi */}
+        <InstallPWA />
+        <PWAStatus />
       </BrowserRouter>
     </ErrorBoundary>
   )

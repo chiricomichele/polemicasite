@@ -54,6 +54,16 @@ button {
   color: inherit;
 }
 
+/* PWA Status - Animazione pulse per indicatore offline */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 input,
 select,
 textarea {
