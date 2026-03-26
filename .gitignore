@@ -18,3 +18,8 @@ dist/
 
 # Supabase
 supabase/.temp/
+
+# Terraform local artifacts
+eng/terraform/.terraform/
+eng/terraform/terraform.tfstate
+eng/terraform/terraform.tfstate.backup
