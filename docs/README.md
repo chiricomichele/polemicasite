@@ -12,6 +12,7 @@ Benvenuto nella documentazione tecnica di **Polemica League**, un'applicazione w
 6. [**Workflow di Sviluppo**](./06-workflow.md) - Best practices e workflow per lo sviluppo
 7. [**Variabili d'Ambiente**](./07-env-setup.md) - Guida rapida alla configurazione delle variabili d'ambiente
 8. [**PWA Setup**](./08-pwa-setup.md) - Guida alla Progressive Web App e installazione
+12. [**Infrastruttura Kubernetes**](./12-infrastruttura-k8s.md) - Terraform, Tekton, ArgoCD, release workflow e checklist di deploy
 
 ## 🎯 Panoramica del Progetto
 

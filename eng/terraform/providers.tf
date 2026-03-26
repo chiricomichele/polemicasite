@@ -1,4 +1,4 @@
-# provider.tf
+# providers.tf
 
 terraform {
   required_providers {
@@ -18,24 +18,34 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.0"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
   }
 }
-
 
 provider "azurerm" {
   features {}
 }
 
 provider "kubernetes" {
-  config_path = var.cloud_provider == "azure" ? "~/.kube/config" : "~/.kube/config"
+  config_path    = "~/.kube/config"
+  config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
 }
 
 provider "kubectl" {
-  config_path = var.cloud_provider == "azure" ? "~/.kube/config" : "~/.kube/config"
+  config_path    = "~/.kube/config"
+  config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
 }
 
 provider "helm" {
   kubernetes {
-    config_path = var.cloud_provider == "azure" ? "~/.kube/config" : "~/.kube/config"
+    config_path    = "~/.kube/config"
+    config_context = var.cloud_provider == "azure" ? "aks-context" : "minikube"
   }
 }
