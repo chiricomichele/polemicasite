@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: polemicasite-web
-        image: michelechirico/polemicasite:v0.1.0
+        image: michelechirico/polemicasite:v0.0.1
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
