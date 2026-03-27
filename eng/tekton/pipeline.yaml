@@ -50,6 +50,8 @@ spec:
     workspaces:
     - name: source
       workspace: shared-data
+    - name: ssh-credentials
+      workspace: ssh-credentials
   - name: build-push-web
     runAfter: [ "compute-version" ]
     taskRef:

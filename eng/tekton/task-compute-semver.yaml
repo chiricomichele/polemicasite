@@ -13,6 +13,8 @@ spec:
   workspaces:
   - name: source
     description: "Git repository workspace"
+  - name: ssh-credentials
+    description: "SSH credentials for fetching remote tags"
   results:
   - name: new-version
     description: "The computed new semver tag (e.g., v1.0.1)"
@@ -26,8 +28,26 @@ spec:
       #!/bin/sh
       set -e
 
+      export HOME=/home/git
+      mkdir -p "$HOME/.ssh"
+      chmod 700 "$HOME/.ssh"
+
       # Allow git to work with repository regardless of ownership
       git config --global --add safe.directory /workspace/source
+
+      if [ -f "$(workspaces.ssh-credentials.path)/id_ed25519" ]; then
+        cp "$(workspaces.ssh-credentials.path)/id_ed25519" "$HOME/.ssh/id_ed25519"
+      elif [ -f "$(workspaces.ssh-credentials.path)/ssh-privatekey" ]; then
+        cp "$(workspaces.ssh-credentials.path)/ssh-privatekey" "$HOME/.ssh/id_ed25519"
+      else
+        echo "SSH private key not found in workspace $(workspaces.ssh-credentials.path)"
+        exit 1
+      fi
+
+      chmod 600 "$HOME/.ssh/id_ed25519"
+      ssh-keyscan -p 443 -t ed25519 ssh.github.com > "$HOME/.ssh/known_hosts" 2>/dev/null || true
+      chmod 600 "$HOME/.ssh/known_hosts"
+      export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_ed25519 -p 443 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
 
       IMAGE_BASE="michelechirico/polemicasite"
 

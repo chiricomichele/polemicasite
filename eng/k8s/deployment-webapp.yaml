@@ -16,6 +16,8 @@ spec:
         app: polemicasite-web
     spec:
       automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: docker-credentials
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
