@@ -22,6 +22,9 @@ spec:
   - name: docker-credentials
     secret:
       secretName: docker-credentials
+      items:
+      - key: .dockerconfigjson
+        path: config.json
   - name: ssh-credentials
     secret:
       secretName: git-credentials
