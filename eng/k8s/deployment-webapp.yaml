@@ -16,8 +16,9 @@ spec:
         app: polemicasite-web
     spec:
       automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: docker-credentials
       securityContext:
-        runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -30,7 +31,6 @@ spec:
           protocol: TCP
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
