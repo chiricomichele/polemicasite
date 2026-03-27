@@ -9,11 +9,11 @@ WORKDIR /app
 COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
 
 # Install dependencies (try multiple package managers)
-# Note: --legacy-peer-deps for vite-plugin-pwa compatibility with Vite 8
-RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; \
+# Keep devDependencies available for `tsc -b` during image build.
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps --include=dev || npm install --legacy-peer-deps --include=dev; \
     elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
     elif [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
-    else npm install --legacy-peer-deps; fi
+    else npm install --legacy-peer-deps --include=dev; fi
 
 # Copy source code
 COPY . .
