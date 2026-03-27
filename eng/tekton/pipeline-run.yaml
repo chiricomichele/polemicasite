@@ -28,6 +28,8 @@ spec:
   params:
   - name: repo-url
     value: ssh://git@github.com/polemicaleague-source/polemicasite.git
+  - name: webapp-reference-image
+    value: michelechirico/polemicasite
   - name: web-dockerfile-path
     value: ./Dockerfile
   - name: git-branch

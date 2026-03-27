@@ -26,6 +26,9 @@ spec:
       #!/bin/sh
       set -e
 
+      # Allow git to work with repository regardless of ownership
+      git config --global --add safe.directory /workspace/source
+
       IMAGE_BASE="michelechirico/polemicasite"
 
       # Read last commit message

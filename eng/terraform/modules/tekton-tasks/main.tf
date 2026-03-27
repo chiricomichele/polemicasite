@@ -82,7 +82,7 @@ resource "kubernetes_role_binding" "tekton_pipeline_runner_binding" {
 
 # Fetch the Tekton git-clone task YAML from the remote URL
 data "http" "tekton_git_clone_task" {
-  url = "https://api.hub.tekton.dev/v1/resource/tekton/task/git-clone/0.9/raw"
+  url = "https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.9/git-clone.yaml"
 }
 
 resource "kubectl_manifest" "tekton_git_clone_task" {
@@ -92,7 +92,7 @@ resource "kubectl_manifest" "tekton_git_clone_task" {
 
 # Fetch the Tekton buildah task YAML from the remote URL
 data "http" "tekton_buildah_task" {
-  url = "https://api.hub.tekton.dev/v1/resource/tekton/task/buildah/0.9/raw"
+  url = "https://raw.githubusercontent.com/tektoncd/catalog/main/task/buildah/0.9/buildah.yaml"
 }
 
 resource "kubectl_manifest" "tekton_buildah_task" {
