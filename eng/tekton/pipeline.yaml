@@ -37,6 +37,12 @@ spec:
       value: $(params.repo-url)
     - name: revision
       value: $(params.git-branch)
+    - name: depth
+      value: "0"
+    - name: deleteExisting
+      value: "true"
+    - name: verbose
+      value: "true"
   - name: compute-version
     runAfter: [ "fetch-source" ]
     taskRef:
