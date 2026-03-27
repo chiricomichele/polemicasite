@@ -31,6 +31,10 @@ spec:
 
       IMAGE_BASE="michelechirico/polemicasite"
 
+      # Ensure remote tags are available in the cloned workspace.
+      # git-clone may leave the repository without the semver tags we need.
+      git fetch --tags origin
+
       # Read last commit message
       COMMIT_MSG=$(git log -1 --pretty=%B)
       echo "Last commit message: ${COMMIT_MSG}"
