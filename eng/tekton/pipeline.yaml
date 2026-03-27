@@ -78,6 +78,8 @@ spec:
       value: $(tasks.compute-version.results.new-version)
     - name: deployment-path
       value: "eng/k8s/deployment-webapp.yaml"
+    - name: git-branch
+      value: $(params.git-branch)
   - name: git-tag-and-push
     runAfter: [ "update-deployment" ]
     taskRef:

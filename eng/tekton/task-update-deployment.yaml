@@ -15,6 +15,10 @@ spec:
     type: string
     default: "eng/k8s/deployment-webapp.yaml"
     description: "Path to the Kubernetes deployment manifest"
+  - name: git-branch
+    type: string
+    default: "main"
+    description: "Git branch to commit and push to"
   workspaces:
   - name: source
     description: "Git repository workspace"
@@ -29,6 +33,10 @@ spec:
       # Configure git
       git config --global user.email "pipeline@polemicasite.local"
       git config --global user.name "Tekton Pipeline"
+      git config --global --add safe.directory $(workspaces.source.path)
+
+      # Checkout the target branch
+      git checkout $(params.git-branch)
 
       # Update the image tag in deployment manifest
       # Replace image: michelechirico/polemicasite:* with michelechirico/polemicasite:TAG
