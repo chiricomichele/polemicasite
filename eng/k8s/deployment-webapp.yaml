@@ -41,7 +41,7 @@ spec:
         emptyDir: {}
       containers:
       - name: polemicasite-web
-        image: michelechirico/polemicasite:v0.0.2
+        image: michelechirico/polemicasite:v0.0.3
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
