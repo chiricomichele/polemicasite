@@ -8,5 +8,14 @@ jenkins_release_name     = "jenkins"
 jenkins_service_type     = "ClusterIP"
 jenkins_persistence_size = "8Gi"
 
+# Optional: uncomment to let Terraform provision Jenkins credentials as code.
+# jenkins_git_ssh_private_key = <<EOT
+# -----BEGIN OPENSSH PRIVATE KEY-----
+# CHANGE_ME
+# -----END OPENSSH PRIVATE KEY-----
+# EOT
+# jenkins_dockerhub_username  = "CHANGE_ME"
+# jenkins_dockerhub_password  = "CHANGE_ME"
+
 # PostgreSQL Configuration
 postgresql_password = "CHANGE_ME_SECURE_PASSWORD_HERE"

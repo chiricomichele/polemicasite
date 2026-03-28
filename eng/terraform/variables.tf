@@ -106,6 +106,75 @@ variable "jenkins_admin_existing_secret" {
   default     = null
 }
 
+variable "jenkins_pipeline_job_name" {
+  description = "Name of the Jenkins release pipeline job"
+  type        = string
+  default     = "release"
+}
+
+variable "jenkins_pipeline_repo_url" {
+  description = "Git repository URL used by the Jenkins release pipeline"
+  type        = string
+  default     = "ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git"
+}
+
+variable "jenkins_pipeline_branch" {
+  description = "Default Git branch used by the Jenkins release pipeline"
+  type        = string
+  default     = "main"
+}
+
+variable "jenkins_pipeline_script_path" {
+  description = "Path to the Jenkinsfile inside the repository"
+  type        = string
+  default     = "eng/jenkins-pipeline/Jenkinsfile.release"
+}
+
+variable "jenkins_image_base" {
+  description = "Default image repository used by the Jenkins release pipeline"
+  type        = string
+  default     = "michelechirico/polemicasite"
+}
+
+variable "jenkins_git_credentials_id" {
+  description = "Credential ID used by Jenkins for Git SSH authentication"
+  type        = string
+  default     = "git-credentials"
+}
+
+variable "jenkins_dockerhub_credentials_id" {
+  description = "Credential ID used by Jenkins for Docker Hub authentication"
+  type        = string
+  default     = "dockerhub-credentials"
+}
+
+variable "jenkins_git_ssh_username" {
+  description = "SSH username stored in Jenkins Git credentials"
+  type        = string
+  default     = "git"
+}
+
+variable "jenkins_git_ssh_private_key" {
+  description = "Optional Git SSH private key to inject into Jenkins credentials via Terraform"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "jenkins_dockerhub_username" {
+  description = "Optional Docker Hub username to inject into Jenkins credentials via Terraform"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "jenkins_dockerhub_password" {
+  description = "Optional Docker Hub password or token to inject into Jenkins credentials via Terraform"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 # PostgreSQL Configuration
 variable "postgresql_namespace" {
   description = "Kubernetes namespace for PostgreSQL"
