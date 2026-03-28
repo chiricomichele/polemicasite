@@ -33,7 +33,7 @@ data:
                       url('ssh://git@ssh.github.com:443/chiricomichele/polemicasite.git')
                       credentials('git-credentials')
                     }
-                    branch('*/main')
+                    branch('*/eng/move-to-jenkins')
                   }
                 }
                 scriptPath('k8s/jcasc/Jenkinsfile.release')
