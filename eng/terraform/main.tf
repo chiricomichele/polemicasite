@@ -38,6 +38,20 @@ module "tekton-tasks" {
   }
 }
 
+module "jenkins" {
+  source     = "./modules/jenkins"
+  count      = var.jenkins_enabled ? 1 : 0
+  depends_on = [module.aks_cluster, module.minikube_cluster]
+
+  jenkins_namespace             = var.jenkins_namespace
+  jenkins_release_name          = var.jenkins_release_name
+  jenkins_chart_version         = var.jenkins_chart_version
+  jenkins_service_type          = var.jenkins_service_type
+  jenkins_persistence_enabled   = var.jenkins_persistence_enabled
+  jenkins_persistence_size      = var.jenkins_persistence_size
+  jenkins_admin_existing_secret = var.jenkins_admin_existing_secret
+}
+
 module "argocd" {
   source         = "./modules/argocd"
   depends_on     = [module.aks_cluster, module.minikube_cluster]
@@ -79,4 +93,14 @@ output "postgresql_connection" {
     connection_string = module.postgresql.postgresql_connection_string
   }
   sensitive = true
+}
+
+output "jenkins_info" {
+  description = "Jenkins release information (null when Jenkins is disabled)"
+  value = var.jenkins_enabled ? {
+    namespace            = module.jenkins[0].namespace
+    release_name         = module.jenkins[0].release_name
+    service_name         = module.jenkins[0].service_name
+    port_forward_command = module.jenkins[0].port_forward_command
+  } : null
 }

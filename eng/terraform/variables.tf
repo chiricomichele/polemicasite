@@ -58,6 +58,54 @@ variable "tekton_dashboard_version" {
   default     = "v0.66.0"
 }
 
+variable "jenkins_enabled" {
+  description = "Install Jenkins using Terraform"
+  type        = bool
+  default     = false
+}
+
+variable "jenkins_namespace" {
+  description = "Namespace where Jenkins will be installed"
+  type        = string
+  default     = "jenkins"
+}
+
+variable "jenkins_release_name" {
+  description = "Helm release name for Jenkins"
+  type        = string
+  default     = "jenkins"
+}
+
+variable "jenkins_chart_version" {
+  description = "Jenkins Helm chart version. Leave empty to use chart default/latest"
+  type        = string
+  default     = ""
+}
+
+variable "jenkins_service_type" {
+  description = "Kubernetes service type for Jenkins controller"
+  type        = string
+  default     = "ClusterIP"
+}
+
+variable "jenkins_persistence_enabled" {
+  description = "Enable persistence for Jenkins"
+  type        = bool
+  default     = true
+}
+
+variable "jenkins_persistence_size" {
+  description = "Persistent volume size for Jenkins"
+  type        = string
+  default     = "8Gi"
+}
+
+variable "jenkins_admin_existing_secret" {
+  description = "Optional existing secret for Jenkins admin credentials"
+  type        = string
+  default     = null
+}
+
 # PostgreSQL Configuration
 variable "postgresql_namespace" {
   description = "Kubernetes namespace for PostgreSQL"

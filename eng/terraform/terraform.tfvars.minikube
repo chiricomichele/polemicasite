@@ -1,5 +1,12 @@
 cloud_provider   = "minikube"
 minikube_profile = "minikube"
 
+# Jenkins Configuration
+jenkins_enabled          = true
+jenkins_namespace        = "jenkins"
+jenkins_release_name     = "jenkins"
+jenkins_service_type     = "ClusterIP"
+jenkins_persistence_size = "8Gi"
+
 # PostgreSQL Configuration
 postgresql_password = "CHANGE_ME_SECURE_PASSWORD_HERE"
