@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: ssh://git@github.com/polemicaleague-source/polemicasite.git
-    targetRevision: HEAD
+    targetRevision: eng/move-to-jenkins
     path: k8s/jcasc
   destination:
     server: https://kubernetes.default.svc
