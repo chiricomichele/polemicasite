@@ -4,11 +4,9 @@ metadata:
   name: jenkins-jcasc-release
   namespace: jenkins
   labels:
-    jenkins.io/jenkins-config: "true"
+    jenkins-jenkins-config: "true"
 data:
   release-job.yaml: |
-    jenkins:
-      systemMessage: "Jenkins is managed by GitOps (ArgoCD + JCasC) for Polemica Site."
     jobs:
       - script: >
           pipelineJob('release') {
