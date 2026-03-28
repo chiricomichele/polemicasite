@@ -6,6 +6,10 @@ metadata:
   labels:
     jenkins-jenkins-config: "true"
 data:
+  git-host-key-verification.yaml: |
+    security:
+      gitHostKeyVerificationConfiguration:
+        sshHostKeyVerificationStrategy: "acceptFirstConnectionStrategy"
   credentials.yaml: |
     credentials:
       system:

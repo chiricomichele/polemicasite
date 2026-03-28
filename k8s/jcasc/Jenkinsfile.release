@@ -16,7 +16,6 @@ pipeline {
     GIT_EMAIL = 'pipeline@polemicasite.local'
     GIT_NAME  = 'Jenkins Pipeline'
     GIT_REPO_SSH = 'ssh://git@ssh.github.com:443/chiricomichele/polemicasite.git'
-    SSH_KEY_FILE = '/run/secrets/additional/git-credentials/id_ed25519'
     DOCKER_CONFIG_SECRET = '/run/secrets/additional/docker-credentials/.dockerconfigjson'
   }
 
@@ -34,66 +33,63 @@ pipeline {
 
     stage('Compute Version') {
       steps {
-        sh '''#!/bin/sh
-          set -e
+        sshagent(credentials: ['git-credentials']) {
+          sh '''#!/bin/sh
+            set -e
 
-          if [ ! -f "$SSH_KEY_FILE" ]; then
-            echo "Missing SSH key file: $SSH_KEY_FILE"
-            exit 1
-          fi
+            mkdir -p "$HOME/.ssh"
+            chmod 700 "$HOME/.ssh"
+            ssh-keyscan -p 443 ssh.github.com > "$HOME/.ssh/known_hosts" 2>/dev/null
+            chmod 600 "$HOME/.ssh/known_hosts"
 
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -p 443 ssh.github.com > "$HOME/.ssh/known_hosts" 2>/dev/null
-          chmod 600 "$HOME/.ssh/known_hosts"
+            export GIT_SSH_COMMAND="ssh -p 443 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+            git fetch --tags origin
 
-          export GIT_SSH_COMMAND="ssh -i $SSH_KEY_FILE -p 443 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
-          git fetch --tags origin
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            BUMP=$(echo "$COMMIT_MSG" | grep -i '+semver:' | grep -oiE '\\+semver:[[:space:]]*(major|minor|patch)' | head -1 | sed 's/+semver://i' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
 
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          BUMP=$(echo "$COMMIT_MSG" | grep -i '+semver:' | grep -oiE '\\+semver:[[:space:]]*(major|minor|patch)' | head -1 | sed 's/+semver://i' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+            if [ -z "$BUMP" ]; then
+              BUMP="patch"
+            fi
 
-          if [ -z "$BUMP" ]; then
-            BUMP="patch"
-          fi
+            LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
+            if [ -z "$LAST_TAG" ]; then
+              LAST_TAG="v0.0.0"
+            fi
 
-          LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
-          if [ -z "$LAST_TAG" ]; then
-            LAST_TAG="v0.0.0"
-          fi
+            VERSION="${LAST_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
 
-          VERSION="${LAST_TAG#v}"
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          MINOR=$(echo "$VERSION" | cut -d. -f2)
-          PATCH=$(echo "$VERSION" | cut -d. -f3)
+            case "$BUMP" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+              *)
+                echo "Invalid semver bump: $BUMP"
+                exit 1
+                ;;
+            esac
 
-          case "$BUMP" in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
-            *)
-              echo "Invalid semver bump: $BUMP"
-              exit 1
-              ;;
-          esac
+            NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+            NEW_IMAGE="${IMAGE_BASE}:${NEW_VERSION}"
 
-          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-          NEW_IMAGE="${IMAGE_BASE}:${NEW_VERSION}"
-
-          echo "$NEW_VERSION" > .new-version
-          echo "$NEW_IMAGE" > .new-image
-          echo "Computed version: $NEW_VERSION"
-          echo "Computed image:   $NEW_IMAGE"
-        '''
+            echo "$NEW_VERSION" > .new-version
+            echo "$NEW_IMAGE" > .new-image
+            echo "Computed version: $NEW_VERSION"
+            echo "Computed image:   $NEW_IMAGE"
+          '''
+        }
         script {
           env.NEW_VERSION = sh(script: 'cat .new-version', returnStdout: true).trim()
           env.NEW_IMAGE = sh(script: 'cat .new-image', returnStdout: true).trim()
@@ -150,35 +146,32 @@ pipeline {
 
     stage('Push Branch and Tag') {
       steps {
-        sh '''#!/bin/sh
-          set -e
+        sshagent(credentials: ['git-credentials']) {
+          sh '''#!/bin/sh
+            set -e
 
-          if [ ! -f "$SSH_KEY_FILE" ]; then
-            echo "Missing SSH key file: $SSH_KEY_FILE"
-            exit 1
-          fi
+            mkdir -p "$HOME/.ssh"
+            chmod 700 "$HOME/.ssh"
+            ssh-keyscan -p 443 ssh.github.com > "$HOME/.ssh/known_hosts" 2>/dev/null
+            chmod 600 "$HOME/.ssh/known_hosts"
 
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -p 443 ssh.github.com > "$HOME/.ssh/known_hosts" 2>/dev/null
-          chmod 600 "$HOME/.ssh/known_hosts"
+            export GIT_SSH_COMMAND="ssh -p 443 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
 
-          export GIT_SSH_COMMAND="ssh -i $SSH_KEY_FILE -p 443 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+            git remote set-url origin "$GIT_REPO_SSH"
+            git push origin "$GIT_BRANCH"
 
-          git remote set-url origin "$GIT_REPO_SSH"
-          git push origin "$GIT_BRANCH"
+            if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
+              git tag -d "$NEW_VERSION" || true
+            fi
 
-          if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
-            git tag -d "$NEW_VERSION" || true
-          fi
-
-          if git ls-remote --tags origin | grep -q "refs/tags/${NEW_VERSION}$"; then
-            echo "Tag ${NEW_VERSION} already exists on remote, skipping tag push"
-          else
-            git tag -a "$NEW_VERSION" -m "Release ${NEW_VERSION}"
-            git push origin "$NEW_VERSION"
-          fi
-        '''
+            if git ls-remote --tags origin | grep -q "refs/tags/${NEW_VERSION}$"; then
+              echo "Tag ${NEW_VERSION} already exists on remote, skipping tag push"
+            else
+              git tag -a "$NEW_VERSION" -m "Release ${NEW_VERSION}"
+              git push origin "$NEW_VERSION"
+            fi
+          '''
+        }
       }
     }
   }
