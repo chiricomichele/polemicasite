@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: ssh://git@github.com/polemicaleague-source/polemicasite.git
+    repoURL: ssh://git@github.com/chiricomichele/polemicasite.git
     targetRevision: eng/move-to-jenkins
     path: k8s/apps
   destination:

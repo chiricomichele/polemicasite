@@ -8,7 +8,7 @@ pipeline {
 
   parameters {
     string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Branch to build and update')
-    string(name: 'REPO_URL', defaultValue: 'ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git', description: 'Git repository URL')
+    string(name: 'REPO_URL', defaultValue: 'ssh://git@ssh.github.com:443/chiricomichele/polemicasite.git', description: 'Git repository URL')
     string(name: 'IMAGE_BASE', defaultValue: 'michelechirico/polemicasite', description: 'Docker image repository')
     string(name: 'DOCKERFILE_PATH', defaultValue: './Dockerfile', description: 'Path to Dockerfile')
     string(name: 'DEPLOYMENT_PATH', defaultValue: 'k8s/apps/deployment-webapp.yaml', description: 'Path to deployment manifest')
