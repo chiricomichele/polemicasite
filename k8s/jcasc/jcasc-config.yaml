@@ -19,7 +19,7 @@ data:
                 scm {
                   git {
                     remote {
-                      url('ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git')
+                      url('git@github.com:chiricomichele/polemicasite.git')
                       credentials('git-credentials')
                     }
                     branch('*/main')
@@ -33,7 +33,6 @@ data:
             }
             parameters {
               stringParam('GIT_BRANCH', 'main', 'Branch to build and update')
-              stringParam('REPO_URL', 'ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git', 'Git repository URL')
               stringParam('IMAGE_BASE', 'michelechirico/polemicasite', 'Docker image repository')
               stringParam('DOCKERFILE_PATH', './Dockerfile', 'Path to Dockerfile')
               stringParam('DEPLOYMENT_PATH', 'k8s/apps/deployment-webapp.yaml', 'Path to deployment manifest')
