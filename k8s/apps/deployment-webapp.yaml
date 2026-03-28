@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: polemicasite-web
+  namespace: polemicasite
+  labels:
+    app: polemicasite-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: polemicasite-web
+  template:
+    metadata:
+      labels:
+        app: polemicasite-web
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: docker-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: env-config
+        secret:
+          secretName: polemicasite-env
+          items:
+          - key: env-config.js
+            path: env-config.js
+      # nginx requires writable dirs at runtime; mandatory with readOnlyRootFilesystem: true
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      containers:
+      - name: polemicasite-web
+        image: michelechirico/polemicasite:v0.0.3
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: env-config
+          mountPath: /usr/share/nginx/html/env-config.js
+          subPath: env-config.js
+          readOnly: true
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi

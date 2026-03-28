@@ -16,125 +16,15 @@ locals {
     "job-dsl"
   ]
 
-  jenkins_git_credentials_enabled       = try(trimspace(var.jenkins_git_ssh_private_key) != "", false)
-  jenkins_dockerhub_credentials_enabled = try(trimspace(var.jenkins_dockerhub_username) != "", false) && try(trimspace(var.jenkins_dockerhub_password) != "", false)
-
-  jenkins_additional_secrets = concat(
-    local.jenkins_git_credentials_enabled ? [
-      {
-        name  = "jenkins-git-ssh-private-key"
-        value = var.jenkins_git_ssh_private_key
-      }
-    ] : [],
-    local.jenkins_dockerhub_credentials_enabled ? [
-      {
-        name  = "jenkins-dockerhub-username"
-        value = var.jenkins_dockerhub_username
-      },
-      {
-        name  = "jenkins-dockerhub-password"
-        value = var.jenkins_dockerhub_password
-      }
-    ] : []
-  )
-
-  jenkins_managed_credentials = concat(
-    local.jenkins_git_credentials_enabled ? [
-      {
-        basicSSHUserPrivateKey = {
-          scope       = "GLOBAL"
-          id          = var.jenkins_git_credentials_id
-          username    = var.jenkins_git_ssh_username
-          description = "Git SSH private key managed by Terraform"
-          privateKeySource = {
-            directEntry = {
-              privateKey = "$${jenkins-git-ssh-private-key}"
-            }
-          }
-        }
-      }
-    ] : [],
-    local.jenkins_dockerhub_credentials_enabled ? [
-      {
-        usernamePassword = {
-          scope       = "GLOBAL"
-          id          = var.jenkins_dockerhub_credentials_id
-          username    = "$${jenkins-dockerhub-username}"
-          password    = "$${jenkins-dockerhub-password}"
-          description = "Docker Hub credentials managed by Terraform"
-        }
-      }
-    ] : []
-  )
-
-  jenkins_jcasc_config_scripts = merge(
-    {
-      "welcome-message" = <<-YAML
-        jenkins:
-          systemMessage: "Jenkins is managed by Terraform and Configuration as Code for Polemica Site."
-      YAML
-      "release-job"     = <<-YAML
-        jobs:
-          - script: >
-              pipelineJob('${var.jenkins_pipeline_job_name}') {
-                description('Managed by Terraform and Jenkins Configuration as Code.')
-                definition {
-                  cpsScm {
-                    lightweight(false)
-                    scm {
-                      git {
-                        remote {
-                          url('${var.jenkins_pipeline_repo_url}')
-                          credentials('${var.jenkins_git_credentials_id}')
-                        }
-                        branch('*/${var.jenkins_pipeline_branch}')
-                      }
-                    }
-                    scriptPath('${var.jenkins_pipeline_script_path}')
-                  }
-                }
-                properties {
-                  disableConcurrentBuilds()
-                }
-                parameters {
-                  stringParam('GIT_BRANCH', '${var.jenkins_pipeline_branch}', 'Branch to build and update')
-                  stringParam('REPO_URL', '${var.jenkins_pipeline_repo_url}', 'Git repository URL')
-                  stringParam('IMAGE_BASE', '${var.jenkins_image_base}', 'Docker image repository')
-                  stringParam('DOCKERFILE_PATH', './Dockerfile', 'Path to Dockerfile')
-                  stringParam('DEPLOYMENT_PATH', 'eng/k8s/deployment-webapp.yaml', 'Path to deployment manifest')
-                }
-              }
-      YAML
-    },
-    length(local.jenkins_managed_credentials) > 0 ? {
-      "managed-credentials" = yamlencode({
-        credentials = {
-          system = {
-            domainCredentials = [
-              {
-                credentials = local.jenkins_managed_credentials
-              }
-            ]
-          }
-        }
-      })
-    } : {}
-  )
-
   jenkins_controller = merge(
     {
       serviceType                   = var.jenkins_service_type
       initConfigMap                 = kubernetes_config_map.jenkins_init.metadata[0].name
       installPlugins                = local.jenkins_install_plugins
-      additionalSecrets             = local.jenkins_additional_secrets
       initializeOnce                = true
       installLatestPlugins          = false
       installLatestSpecifiedPlugins = false
       overwritePluginsFromImage     = false
-      JCasC = {
-        overwriteConfiguration = true
-        configScripts          = local.jenkins_jcasc_config_scripts
-      }
       javaOpts = "-Xmx1024m"
       ingress = {
         enabled = false

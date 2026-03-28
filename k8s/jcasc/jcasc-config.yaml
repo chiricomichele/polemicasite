@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-jcasc-release
+  namespace: jenkins
+  labels:
+    jenkins.io/jenkins-config: "true"
+data:
+  release-job.yaml: |
+    jenkins:
+      systemMessage: "Jenkins is managed by GitOps (ArgoCD + JCasC) for Polemica Site."
+    jobs:
+      - script: >
+          pipelineJob('release') {
+            description('Managed by GitOps and Jenkins Configuration as Code.')
+            definition {
+              cpsScm {
+                lightweight(false)
+                scm {
+                  git {
+                    remote {
+                      url('ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git')
+                      credentials('git-credentials')
+                    }
+                    branch('*/main')
+                  }
+                }
+                scriptPath('k8s/jcasc/Jenkinsfile.release')
+              }
+            }
+            properties {
+              disableConcurrentBuilds()
+            }
+            parameters {
+              stringParam('GIT_BRANCH', 'main', 'Branch to build and update')
+              stringParam('REPO_URL', 'ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git', 'Git repository URL')
+              stringParam('IMAGE_BASE', 'michelechirico/polemicasite', 'Docker image repository')
+              stringParam('DOCKERFILE_PATH', './Dockerfile', 'Path to Dockerfile')
+              stringParam('DEPLOYMENT_PATH', 'k8s/apps/deployment-webapp.yaml', 'Path to deployment manifest')
+            }
+          }

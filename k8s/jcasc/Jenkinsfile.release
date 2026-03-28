@@ -1,0 +1,161 @@
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timestamps()
+  }
+
+  parameters {
+    string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Branch to build and update')
+    string(name: 'REPO_URL', defaultValue: 'ssh://git@ssh.github.com:443/polemicaleague-source/polemicasite.git', description: 'Git repository URL')
+    string(name: 'IMAGE_BASE', defaultValue: 'michelechirico/polemicasite', description: 'Docker image repository')
+    string(name: 'DOCKERFILE_PATH', defaultValue: './Dockerfile', description: 'Path to Dockerfile')
+    string(name: 'DEPLOYMENT_PATH', defaultValue: 'k8s/apps/deployment-webapp.yaml', description: 'Path to deployment manifest')
+  }
+
+  environment {
+    GIT_EMAIL = 'pipeline@polemicasite.local'
+    GIT_NAME  = 'Jenkins Pipeline'
+  }
+
+  stages {
+    stage('Fetch Source') {
+      steps {
+        checkout scm
+        sh '''#!/bin/sh
+          set -e
+          git config --global --add safe.directory "$WORKSPACE"
+          git checkout "$GIT_BRANCH"
+        '''
+      }
+    }
+
+    stage('Compute Version') {
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'git-credentials', keyFileVariable: 'SSH_KEY')]) {
+          sh '''#!/bin/sh
+            set -e
+
+            export GIT_SSH_COMMAND="ssh -i $SSH_KEY -p 443 -o StrictHostKeyChecking=no"
+            git fetch --tags origin
+
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            BUMP=$(echo "$COMMIT_MSG" | grep -i '+semver:' | grep -oiE '\\+semver:[[:space:]]*(major|minor|patch)' | head -1 | sed 's/+semver://i' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+
+            if [ -z "$BUMP" ]; then
+              BUMP="patch"
+            fi
+
+            LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
+            if [ -z "$LAST_TAG" ]; then
+              LAST_TAG="v0.0.0"
+            fi
+
+            VERSION="${LAST_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+            case "$BUMP" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+              *)
+                echo "Invalid semver bump: $BUMP"
+                exit 1
+                ;;
+            esac
+
+            NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+            NEW_IMAGE="${IMAGE_BASE}:${NEW_VERSION}"
+
+            echo "$NEW_VERSION" > .new-version
+            echo "$NEW_IMAGE" > .new-image
+            echo "Computed version: $NEW_VERSION"
+            echo "Computed image:   $NEW_IMAGE"
+          '''
+          script {
+            env.NEW_VERSION = sh(script: 'cat .new-version', returnStdout: true).trim()
+            env.NEW_IMAGE = sh(script: 'cat .new-image', returnStdout: true).trim()
+          }
+        }
+      }
+    }
+
+    stage('Build and Push Image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''#!/bin/sh
+            set -e
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker build -f "$DOCKERFILE_PATH" -t "$NEW_IMAGE" .
+            docker push "$NEW_IMAGE"
+            docker logout
+          '''
+        }
+      }
+    }
+
+    stage('Update Deployment Manifest') {
+      steps {
+        sh '''#!/bin/sh
+          set -e
+          git config --global user.email "$GIT_EMAIL"
+          git config --global user.name "$GIT_NAME"
+
+          sed -i "s|image: ${IMAGE_BASE}:.*|image: ${IMAGE_BASE}:${NEW_VERSION}|g" "$DEPLOYMENT_PATH"
+
+          git add "$DEPLOYMENT_PATH"
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit"
+          else
+            git commit -m "chore: bump image to ${NEW_VERSION}"
+          fi
+        '''
+      }
+    }
+
+    stage('Push Branch and Tag') {
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'git-credentials', keyFileVariable: 'SSH_KEY')]) {
+          sh '''#!/bin/sh
+            set -e
+            export GIT_SSH_COMMAND="ssh -i $SSH_KEY -p 443 -o StrictHostKeyChecking=no"
+
+            git push origin "$GIT_BRANCH"
+
+            if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
+              git tag -d "$NEW_VERSION" || true
+            fi
+
+            if git ls-remote --tags origin | grep -q "refs/tags/${NEW_VERSION}$"; then
+              echo "Tag ${NEW_VERSION} already exists on remote, skipping tag push"
+            else
+              git tag -a "$NEW_VERSION" -m "Release ${NEW_VERSION}"
+              git push origin "$NEW_VERSION"
+            fi
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo "Release pipeline completed"
+      echo "Branch: ${params.GIT_BRANCH}"
+      echo "Version: ${env.NEW_VERSION ?: 'not-computed'}"
+      echo "Image: ${env.NEW_IMAGE ?: 'not-computed'}"
+    }
+  }
+}

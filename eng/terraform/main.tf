@@ -34,17 +34,6 @@ module "jenkins" {
   jenkins_persistence_enabled      = var.jenkins_persistence_enabled
   jenkins_persistence_size         = var.jenkins_persistence_size
   jenkins_admin_existing_secret    = var.jenkins_admin_existing_secret
-  jenkins_pipeline_job_name        = var.jenkins_pipeline_job_name
-  jenkins_pipeline_repo_url        = var.jenkins_pipeline_repo_url
-  jenkins_pipeline_branch          = var.jenkins_pipeline_branch
-  jenkins_pipeline_script_path     = var.jenkins_pipeline_script_path
-  jenkins_image_base               = var.jenkins_image_base
-  jenkins_git_credentials_id       = var.jenkins_git_credentials_id
-  jenkins_dockerhub_credentials_id = var.jenkins_dockerhub_credentials_id
-  jenkins_git_ssh_username         = var.jenkins_git_ssh_username
-  jenkins_git_ssh_private_key      = var.jenkins_git_ssh_private_key
-  jenkins_dockerhub_username       = var.jenkins_dockerhub_username
-  jenkins_dockerhub_password       = var.jenkins_dockerhub_password
 }
 
 module "argocd" {
