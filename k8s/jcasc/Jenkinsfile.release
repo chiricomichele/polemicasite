@@ -1,5 +1,22 @@
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: jnlp
+      image: jenkins/inbound-agent:3355.v388858a_47b_33-16
+      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug
+      command:
+        - /busybox/cat
+      tty: true
+'''
+    }
+  }
 
   options {
     disableConcurrentBuilds()
@@ -99,24 +116,20 @@ pipeline {
     stage('Build and Push Image') {
       steps {
         withCredentials([string(credentialsId: 'docker-config-json', variable: 'DOCKER_CONFIG_JSON')]) {
-          sh '''#!/bin/sh
-            set -e
+          container('kaniko') {
+            sh '''#!/busybox/sh
+              set -e
 
-            AUTH_B64=$(printf '%s' "$DOCKER_CONFIG_JSON" | grep -o '"auth"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n 1 | cut -d '"' -f 4)
-            if [ -z "$AUTH_B64" ]; then
-              echo "Could not parse Docker auth from Jenkins credential docker-config-json"
-              exit 1
-            fi
+              mkdir -p /kaniko/.docker
+              printf '%s' "$DOCKER_CONFIG_JSON" > /kaniko/.docker/config.json
 
-            USER_PASS=$(printf '%s' "$AUTH_B64" | base64 -d)
-            DOCKER_USER=${USER_PASS%%:*}
-            DOCKER_PASS=${USER_PASS#*:}
-
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker build -f "$DOCKERFILE_PATH" -t "$NEW_IMAGE" .
-            docker push "$NEW_IMAGE"
-            docker logout
-          '''
+              /kaniko/executor \
+                --context "$WORKSPACE" \
+                --dockerfile "$WORKSPACE/$DOCKERFILE_PATH" \
+                --destination "$NEW_IMAGE" \
+                --cleanup
+            '''
+          }
         }
       }
     }
