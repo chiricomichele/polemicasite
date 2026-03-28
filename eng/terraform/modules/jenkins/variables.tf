@@ -34,3 +34,21 @@ variable "jenkins_admin_existing_secret" {
   type        = string
   default     = null
 }
+
+variable "jenkins_additional_existing_secrets" {
+  description = "Additional Kubernetes secrets to mount under /run/secrets/additional for Jenkins"
+  type = list(object({
+    name    = string
+    keyName = string
+  }))
+  default = [
+    {
+      name    = "git-credentials"
+      keyName = "id_ed25519"
+    },
+    {
+      name    = "docker-credentials"
+      keyName = ".dockerconfigjson"
+    }
+  ]
+}

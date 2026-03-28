@@ -24,11 +24,25 @@ locals {
       initializeOnce                = true
       installLatestPlugins          = false
       installLatestSpecifiedPlugins = false
-      overwritePluginsFromImage     = false
+      overwritePluginsFromImage     = true
       javaOpts = "-Xmx1024m"
+      containerEnvFrom = [
+        {
+          secretRef = {
+            name = "git-credentials"
+          }
+        }
+      ]
+      containerSecurityContext = {
+        allowPrivilegeEscalation = false
+        runAsUser                = 1000
+        runAsGroup               = 1000
+        readOnlyRootFilesystem   = false
+      }
       ingress = {
         enabled = false
       }
+      additionalExistingSecrets = var.jenkins_additional_existing_secrets
     },
     var.jenkins_admin_existing_secret != null ? {
       admin = {

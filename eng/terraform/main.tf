@@ -34,6 +34,7 @@ module "jenkins" {
   jenkins_persistence_enabled      = var.jenkins_persistence_enabled
   jenkins_persistence_size         = var.jenkins_persistence_size
   jenkins_admin_existing_secret    = var.jenkins_admin_existing_secret
+  jenkins_additional_existing_secrets = var.jenkins_additional_existing_secrets
 }
 
 module "argocd" {
