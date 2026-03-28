@@ -22,22 +22,6 @@ module "minikube_cluster" {
   }
 }
 
-module "tekton" {
-  source                   = "./modules/tekton"
-  depends_on               = [module.aks_cluster, module.minikube_cluster]
-  tekton_version           = var.tekton_version
-  tekton_dashboard_version = var.tekton_dashboard_version
-}
-
-module "tekton-tasks" {
-  source     = "./modules/tekton-tasks"
-  depends_on = [module.tekton]
-
-  providers = {
-    kubectl = kubectl
-  }
-}
-
 module "jenkins" {
   source     = "./modules/jenkins"
   count      = var.jenkins_enabled ? 1 : 0

@@ -40,22 +40,10 @@ variable "minikube_profile" {
   default     = "minikube"
 }
 
-variable "tekton_version" {
-  description = "Version of Tekton Pipelines Helm chart"
-  type        = string
-  default     = "1.9.1"
-}
-
 variable "argocd_version" {
   description = "Version of ArgoCD Helm chart"
   type        = string
   default     = "9.4.16"
-}
-
-variable "tekton_dashboard_version" {
-  description = "Version tag of Tekton Dashboard official release manifest (for example v0.66.0)"
-  type        = string
-  default     = "v0.66.0"
 }
 
 variable "jenkins_enabled" {
