@@ -17,7 +17,11 @@ locals {
         "ssh-agent",
         "docker-workflow"
       ]
-      javaOpts = "-Xmx1024m"
+      initializeOnce                = true
+      installLatestPlugins          = false
+      installLatestSpecifiedPlugins = false
+      overwritePluginsFromImage     = false
+      javaOpts                      = "-Xmx1024m"
       ingress = {
         enabled = false
       }
