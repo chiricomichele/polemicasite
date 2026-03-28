@@ -6,6 +6,19 @@ metadata:
   labels:
     jenkins-jenkins-config: "true"
 data:
+  credentials.yaml: |
+    credentials:
+      system:
+        domainCredentials:
+          - credentials:
+              - basicSSHUserPrivateKey:
+                  scope: GLOBAL
+                  id: git-credentials
+                  username: git
+                  description: GitHub SSH key from Kubernetes secret
+                  privateKeySource:
+                    directEntry:
+                      privateKey: "${id_ed25519}"
   release-job.yaml: |
     jobs:
       - script: >
@@ -17,7 +30,7 @@ data:
                 scm {
                   git {
                     remote {
-                      url('git@github.com:chiricomichele/polemicasite.git')
+                      url('ssh://git@ssh.github.com:443/chiricomichele/polemicasite.git')
                       credentials('git-credentials')
                     }
                     branch('*/main')
