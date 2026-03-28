@@ -16,7 +16,6 @@ pipeline {
     GIT_EMAIL = 'pipeline@polemicasite.local'
     GIT_NAME  = 'Jenkins Pipeline'
     GIT_REPO_SSH = 'ssh://git@ssh.github.com:443/chiricomichele/polemicasite.git'
-    DOCKER_CONFIG_SECRET = '/run/secrets/additional/docker-credentials/.dockerconfigjson'
   }
 
   stages {
@@ -99,29 +98,26 @@ pipeline {
 
     stage('Build and Push Image') {
       steps {
-        sh '''#!/bin/sh
-          set -e
+        withCredentials([string(credentialsId: 'docker-config-json', variable: 'DOCKER_CONFIG_JSON')]) {
+          sh '''#!/bin/sh
+            set -e
 
-          if [ ! -f "$DOCKER_CONFIG_SECRET" ]; then
-            echo "Missing Docker config secret: $DOCKER_CONFIG_SECRET"
-            exit 1
-          fi
+            AUTH_B64=$(printf '%s' "$DOCKER_CONFIG_JSON" | grep -o '"auth"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n 1 | cut -d '"' -f 4)
+            if [ -z "$AUTH_B64" ]; then
+              echo "Could not parse Docker auth from Jenkins credential docker-config-json"
+              exit 1
+            fi
 
-          AUTH_B64=$(grep -o '"auth"[[:space:]]*:[[:space:]]*"[^"]*"' "$DOCKER_CONFIG_SECRET" | head -n 1 | sed -E 's/.*"auth"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')
-          if [ -z "$AUTH_B64" ]; then
-            echo "Could not parse Docker auth from $DOCKER_CONFIG_SECRET"
-            exit 1
-          fi
+            USER_PASS=$(printf '%s' "$AUTH_B64" | base64 -d)
+            DOCKER_USER=${USER_PASS%%:*}
+            DOCKER_PASS=${USER_PASS#*:}
 
-          USER_PASS=$(printf '%s' "$AUTH_B64" | base64 -d)
-          DOCKER_USER=${USER_PASS%%:*}
-          DOCKER_PASS=${USER_PASS#*:}
-
-          echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-          docker build -f "$DOCKERFILE_PATH" -t "$NEW_IMAGE" .
-          docker push "$NEW_IMAGE"
-          docker logout
-        '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker build -f "$DOCKERFILE_PATH" -t "$NEW_IMAGE" .
+            docker push "$NEW_IMAGE"
+            docker logout
+          '''
+        }
       }
     }
 

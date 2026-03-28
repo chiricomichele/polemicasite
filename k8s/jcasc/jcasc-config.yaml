@@ -23,6 +23,11 @@ data:
                   privateKeySource:
                     directEntry:
                       privateKey: "${id_ed25519}"
+              - string:
+                  scope: GLOBAL
+                  id: docker-config-json
+                  description: Docker config.json payload from Kubernetes secret
+                  secret: "${DOCKER_CONFIG_JSON}"
   release-job.yaml: |
     jobs:
       - script: >

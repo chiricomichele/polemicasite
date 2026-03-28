@@ -33,6 +33,17 @@ locals {
           }
         }
       ]
+      containerEnv = [
+        {
+          name = "DOCKER_CONFIG_JSON"
+          valueFrom = {
+            secretKeyRef = {
+              name = "docker-credentials"
+              key  = ".dockerconfigjson"
+            }
+          }
+        }
+      ]
       containerSecurityContext = {
         allowPrivilegeEscalation = false
         runAsUser                = 1000
